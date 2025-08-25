@@ -1,0 +1,5 @@
+Logistic Regression → Good baseline, interpretable, but may miss complex relationships.
+Decision Tree → Simple, interpretable, but overfits.
+Random Forest → Strong, robust, handles categorical+numerical well.
+Gradient Boosting (XGBoost, LightGBM, CatBoost) → Typically top performers on tabular datasets.
+SVM / KNN / ANN → Not as strong here, either due to small dataset size (ANN) or inefficiency (KNN, SVM).
