@@ -103,10 +103,13 @@ LReg.fit(X_train, y_train)
 y_pred = LReg.predict(X_test)
 
 print("\nAccuracy:", accuracy_score(y_test, y_pred))
-print("\nConfusion Matrix:\n", confusion_matrix(y_test, y_pred))
-print("\nClassification Report:\n", classification_report(y_test, y_pred))
+
 
 import joblib
 
 #to save the model as a file to use in scoring agent
 joblib.dump(LReg, "logisticRegression.pkl")
+
+# To save the scaler
+joblib.dump(scaler, "logisticRegressionScaler.pkl")
+
