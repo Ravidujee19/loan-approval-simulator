@@ -55,9 +55,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 import os
 
-# Optional: print current folder and files
-print("Current folder:", os.getcwd())
-print("Files here:", os.listdir())
 
 # Load dataset
 df = pd.read_csv("agents/score_agent/model/loan_approval_dataset.csv")

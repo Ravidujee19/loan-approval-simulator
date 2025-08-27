@@ -22,7 +22,7 @@ def score_applicant(applicant_data: dict):
     for col in applicant_df.select_dtypes(include='object').columns:
         applicant_df[col] = applicant_df[col].str.strip()
 
-    # One-hot encode categorical features
+    # To encode categorical features
     applicant_df = pd.get_dummies(applicant_df, drop_first=True)
 
     # Align with training features
