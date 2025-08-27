@@ -4,9 +4,14 @@ import joblib
 
 app = FastAPI()
 
-# Load model and scaler once at startup
-model = joblib.load("agents/score_agent/logisticRegression.pkl")
-scaler = joblib.load("agents/score_agent/logisticRegressionScaler.pkl")
+# Load each model model and scaler once at startup and get the one with highest accuracy
+LRegModel = joblib.load("agents/score_agent/logisticRegression.pkl")
+LRegScaler = joblib.load("agents/score_agent/logisticRegressionScaler.pkl")
+
+
+
+
+#####after done training models must check which gets the highjest accuracy and then get the one with highest accuracy
 
 def score_applicant(applicant_data: dict):
     # Convert to DataFrame
@@ -21,20 +26,23 @@ def score_applicant(applicant_data: dict):
     applicant_df = pd.get_dummies(applicant_df, drop_first=True)
 
     # Align with training features
-    applicant_df = applicant_df.reindex(columns=model.feature_names_in_, fill_value=0)
+    applicant_df = applicant_df.reindex(columns=LRegModel.feature_names_in_, fill_value=0)
 
     # Scale
-    applicant_scaled = scaler.transform(applicant_df)
+    applicant_scaled = LRegScaler.transform(applicant_df)
 
     # Predict
-    prob = model.predict_proba(applicant_scaled)[:, 1][0]
-    pred = model.predict(applicant_scaled)[0]
+    prob = LRegModel.predict_proba(applicant_scaled)[:, 1][0]
+    pred = LRegModel.predict(applicant_scaled)[0]
 
     return {
         "prediction": "Approved" if pred == 1 else "Rejected",
         "probability": float(prob)
     }
 
-@app.post("/score")
+
+###From here we get the applicant data of ravidu aiyya. it calls the function above
+
+@app.post("/score")         ####ravidu aiyyas applicant data comes here
 def score_endpoint(applicant: dict):
     return score_applicant(applicant)
