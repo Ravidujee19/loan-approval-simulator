@@ -70,3 +70,9 @@ import json
 
 with open("agents/score_agent/mlpClassifier_accuracy.json", "w") as f:
     json.dump({"accuracy": accuracy}, f)
+
+
+#to save the training coloumns
+training_columns = X.columns.tolist()  
+with open("agents/score_agent/mlpClassifier_columns.json", "w") as f:
+    json.dump(training_columns, f)

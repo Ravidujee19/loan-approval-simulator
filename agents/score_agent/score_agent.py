@@ -2,6 +2,7 @@ from fastapi import FastAPI
 import pandas as pd
 import joblib
 import json
+import os
 
 app = FastAPI()
 
@@ -28,6 +29,10 @@ best_scaler = models_info[best_model_name]["scaler"]
 
 print(f"✅ Using best model: {best_model_name} (Accuracy: {models_info[best_model_name]['accuracy']:.4f})")
 
+BASE_DIR = os.path.dirname(__file__)  # points to agents/score_agent
+with open(os.path.join(BASE_DIR, "mlpClassifier_columns.json")) as f:
+    mlp_columns = json.load(f)
+
 
 #####after done training models must check which gets the highjest accuracy and then get the one with highest accuracy
 
@@ -44,7 +49,7 @@ def score_applicant(applicant_data: dict):
     applicant_df = pd.get_dummies(applicant_df, drop_first=True)
 
     # Align with training features
-    applicant_df = applicant_df.reindex(columns=best_model.feature_names_in_, fill_value=0)
+    applicant_df = applicant_df.reindex(columns=mlp_columns, fill_value=0)
 
     
     ##Incase if the model which was the best doesnt have a scaler
