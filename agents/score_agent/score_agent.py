@@ -62,12 +62,15 @@ def score_applicant(applicant_data: dict):
     prob = best_model.predict_proba(applicant_scaled)[:, 1][0]
     pred = best_model.predict(applicant_scaled)[0]
 
+    #To get the score out of 100
+    score = round(prob * 100, 2)
+
     
 
     return {
         "model_used": best_model_name,
         "prediction": "Approved" if pred == 1 else "Rejected",
-        "probability": float(prob)
+        "score": score
     }
 
 
