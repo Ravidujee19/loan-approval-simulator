@@ -52,7 +52,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.metrics import accuracy_score
 import os
 
 
@@ -99,6 +99,8 @@ LReg.fit(X_train, y_train)
 # Predict and evaluate
 y_pred = LReg.predict(X_test)
 
+accuracy = accuracy_score(y_test, y_pred)
+
 print("\nAccuracy:", accuracy_score(y_test, y_pred))
 
 
@@ -110,3 +112,10 @@ joblib.dump(LReg, "agents/score_agent/logisticRegression.pkl")
 # To save the scaler
 joblib.dump(LRegScaler, "agents/score_agent/logisticRegressionScaler.pkl")
 
+
+#To save the accuracy to compare the accuracies in score agent
+
+import json
+
+with open("agents/score_agent/logisticRegression_accuracy.json", "w") as f:
+    json.dump({"accuracy": accuracy}, f)

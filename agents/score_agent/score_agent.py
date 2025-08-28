@@ -1,20 +1,38 @@
 from fastapi import FastAPI
 import pandas as pd
 import joblib
+import json
 
 app = FastAPI()
 
-# Load each model model and scaler once at startup and get the one with highest accuracy
-LRegModel = joblib.load("agents/score_agent/logisticRegression.pkl")
-LRegScaler = joblib.load("agents/score_agent/logisticRegressionScaler.pkl")
 
+###Creating a dictionary with all models info
+models_info = {
+    "logisticRegression": {
+        "model": joblib.load("agents/score_agent/logisticRegression.pkl"),
+        "scaler": joblib.load("agents/score_agent/logisticRegressionScaler.pkl"),
+        "accuracy": json.load(open("agents/score_agent/logisticRegression_accuracy.json"))["accuracy"]
+    },
+    "mlpClassifier": {
+        "model": joblib.load("agents/score_agent/mlpClassifier.pkl"),
+        "scaler": joblib.load("agents/score_agent/mlpClassifierScaler.pkl"),
+        "accuracy": json.load(open("agents/score_agent/mlpClassifier_accuracy.json"))["accuracy"]
+    }
+    ##Add thenura's model
+}
 
+# Pick the best model by accuracy
+best_model_name = max(models_info, key=lambda name: models_info[name]["accuracy"])
+best_model = models_info[best_model_name]["model"]
+best_scaler = models_info[best_model_name]["scaler"]
+
+print(f"✅ Using best model: {best_model_name} (Accuracy: {models_info[best_model_name]['accuracy']:.4f})")
 
 
 #####after done training models must check which gets the highjest accuracy and then get the one with highest accuracy
 
 def score_applicant(applicant_data: dict):
-    # Convert to DataFrame
+    # Convert applicant dictionary to a DataFrame
     applicant_df = pd.DataFrame([applicant_data])
 
     # Clean columns
@@ -26,16 +44,23 @@ def score_applicant(applicant_data: dict):
     applicant_df = pd.get_dummies(applicant_df, drop_first=True)
 
     # Align with training features
-    applicant_df = applicant_df.reindex(columns=LRegModel.feature_names_in_, fill_value=0)
+    applicant_df = applicant_df.reindex(columns=best_model.feature_names_in_, fill_value=0)
 
-    # Scale
-    applicant_scaled = LRegScaler.transform(applicant_df)
+    
+    ##Incase if the model which was the best doesnt have a scaler
+    if best_scaler is not None:
+        applicant_scaled = best_scaler.transform(applicant_df)
+    else:
+        applicant_scaled = applicant_df
 
     # Predict
-    prob = LRegModel.predict_proba(applicant_scaled)[:, 1][0]
-    pred = LRegModel.predict(applicant_scaled)[0]
+    prob = best_model.predict_proba(applicant_scaled)[:, 1][0]
+    pred = best_model.predict(applicant_scaled)[0]
+
+    
 
     return {
+        "model_used": best_model_name,
         "prediction": "Approved" if pred == 1 else "Rejected",
         "probability": float(prob)
     }
@@ -46,3 +71,4 @@ def score_applicant(applicant_data: dict):
 @app.post("/score")         ####ravidu aiyyas applicant data comes here
 def score_endpoint(applicant: dict):
     return score_applicant(applicant)
+
