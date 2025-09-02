@@ -1,30 +1,33 @@
 import joblib
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from pathlib import Path
 from sklearn.cluster import KMeans
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 
 # 1. Load dataset
 df = pd.read_csv("data/raw/loan_approval_dataset.csv")
 
-#select numarical features and catgo features separetly
+# Select numerical features and categorical features separately
 num_features = [
-    " no_of_dependents",
-    " income_annum",
-    " loan_amount",
-    " loan_term",
-    " cibil_score",
-    " residential_assets_value",
-    " commercial_assets_value",
-    " luxury_assets_value",
-    " bank_asset_value",
+    "no_of_dependents",
+    "income_annum",
+    "loan_amount",
+    "loan_term",
+    "cibil_score",
+    "residential_assets_value",
+    "commercial_assets_value",
+    "luxury_assets_value",
+    "bank_asset_value",
 ]
-cat_features = [" education", " self_employed"]
+cat_features = ["education", "self_employed"]
 
-#dataset cleaning part
+# Dataset cleaning part
 for c in num_features:
     df[c] = pd.to_numeric(df[c], errors="coerce")
 df[num_features] = df[num_features].fillna(df[num_features].median())
@@ -65,6 +68,35 @@ joblib.dump(preproc, "models/reco_preproc.joblib")
 joblib.dump(kmeans, "models/reco_kmeans.joblib")
 print("✅ Training completed. Saved: models/reco_preproc.joblib, models/reco_kmeans.joblib")
 
-#checking quality of the clusters
+# Checking quality of the clusters
 print("Inertia:", kmeans.inertia_)
 print("Silhouette Score:", silhouette_score(X_prep, kmeans.labels_))
+
+# ---------------------------- New code for PCA and t-SNE ----------------------------
+
+# 6) PCA for dimensionality reduction to 2D
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X_prep)
+
+# Plot PCA-reduced data
+plt.figure(figsize=(8, 6))
+plt.scatter(X_pca[:, 0], X_pca[:, 1], c=labels, cmap='viridis')
+plt.title('2D plot using PCA')
+plt.xlabel('PCA Component 1')
+plt.ylabel('PCA Component 2')
+plt.colorbar(label='Cluster')
+plt.show()
+
+# 7) t-SNE for dimensionality reduction to 2D
+tsne = TSNE(n_components=2)
+X_tsne = tsne.fit_transform(X_prep)
+
+# Plot t-SNE-reduced data
+plt.figure(figsize=(8, 6))
+plt.scatter(X_tsne[:, 0], X_tsne[:, 1], c=labels, cmap='viridis')
+plt.title('2D plot using t-SNE')
+plt.xlabel('t-SNE Component 1')
+plt.ylabel('t-SNE Component 2')
+plt.colorbar(label='Cluster')
+plt.show()
+
