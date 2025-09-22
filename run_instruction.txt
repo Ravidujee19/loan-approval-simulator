@@ -1,0 +1,137 @@
+Applicant Evaluator — Run Instructions (Windows & Docker)
+
+A) Docker Compose 
+B) Windows local dev (backend + UI on host; PostgreSQL via Docker)
+
+- Ports:
+  - API:      http://localhost:8000
+  - UI:       http://localhost:5173
+  - Adminer:  http://localhost:8080 (DB viewer)
+  - Postgres: localhost:5432 (host-mapped)
+
+Prerequisites
+1) Windows 10/11 with:
+   - Docker Desktop (WSL2 backend recommended)
+   - Git
+   - (For local dev) Python 3.12 or 3.11 and Node.js 20 
+2) Allow Docker Desktop to expose 5432, 5173, 8000, 8080.
+
+Files to know
+- .env.example.env                           (backend env sample)
+- loan-ui/.env.example.env                   (frontend env sample)
+- agents/applicant_evaluator/app/db/alembic  (Alembic migrations)
+- .http/*.http                               (sample HTTP requests)
+
+
+A) Run with Docker Compose (API + UI + Postgres + Adminer)
+
+1) Copy backend env and set DATABASE_URL for containers:
+   - Open example.env in a text editor.
+   - Set DATABASE_URL to use the compose service host "postgres":
+     DATABASE_URL=postgresql+psycopg2://app:app@postgres:5432/evaluator
+
+   NOTE: When running in Docker, "localhost" would point to the container itself.
+         Using "postgres" ensures the API connects to the Postgres container.
+
+2) (Optional) Frontend env:
+   - loan-ui/.env.example already points to http://localhost:8000
+
+3) Start services:
+   PowerShell:
+     docker compose up --build
+   This launches:
+     - api        (FastAPI)
+     - ui         (Vite dev server)
+     - postgres   (database)
+     - adminer    (DB UI)
+
+4) Run DB migrations inside the API container:
+   In a new terminal:
+     docker compose exec api alembic -c agents/applicant_evaluator/app/db/alembic.ini upgrade head
+
+5) Seed sample data (admin user + sample applicants):
+     docker compose exec api python agents/applicant_evaluator/app/seed_data.py
+
+6) Open the apps:
+   - UI:       http://localhost:5173
+   - API docs: http://localhost:8000/docs
+   - Adminer:  http://localhost:8080  (System: PostgreSQL, Server: postgres, User: app, Pass: app, DB: evaluator)
+
+7) Quick test (from .http):
+   - Use a REST client (VS Code REST Client / Insomnia / Postman) and try:
+     .http/auth.http, .http/applicants.http, .http/loans.http
+
+8) Stop:
+     Ctrl+C in the compose terminal, or:
+     docker compose down -v
+
+
+B) Windows local development (Python + Node on host)
+   (Use Docker only for Postgres + Adminer)
+
+1) Start Postgres + Adminer only:
+     docker compose up -d postgres adminer
+
+   Check Adminer at http://localhost:8081
+   - System: PostgreSQL
+   - Server: localhost
+   - Username: app
+   - Password: app
+   - Database: evaluator
+
+2) Backend environment:
+   - Copy env:
+       copy example.env .env
+   - Ensure DATABASE_URL points to localhost:
+       DATABASE_URL=postgresql+psycopg2://app:app@localhost:5432/evaluator
+
+3) Create & activate Python venv (PowerShell):
+     python -m venv .venv
+     .\.venv\Scripts\Activate.ps1
+     pip install -r requirements.txt
+
+4) Run DB migrations:
+     alembic -c agents/applicant_evaluator/app/db/alembic.ini upgrade head
+
+5) Seed data:
+     python agents/applicant_evaluator/app/seed_data.py
+
+     or
+
+     $env:PYTHONPATH   = "$PWD"
+     $env:DATABASE_URL = "postgresql+psycopg2://app:app@127.0.0.1:5433/evaluator"
+     python -m agents.applicant_evaluator.app.seed_data
+
+verify - docker exec -it -e PGPASSWORD=app pg psql -U app -d evaluator -c "SELECT COUNT(*) FROM <your_table>;"
+
+
+6) Start backend:
+     uvicorn agents.applicant_evaluator.app.main:app --reload --port 8000
+   - API docs: http://localhost:8000/docs
+
+7) Frontend:
+   - Install & run:
+       npm --prefix loan-ui install
+       npm --prefix loan-ui run dev
+   - UI: 
+
+8) Stop:
+   - Ctrl+C in each terminal
+   - Optional: docker compose down -v  (to stop Postgres/Adminer)
+
+
+Accounts & Sample Data
+----------------------
+- Admin (after seed):
+  email: admin@example.com
+  pass:  Admin@12345
+
+- Example flow:
+  1) Register or login (POST /api/v1/auth/register or /api/v1/auth/login)
+  2) Create applicant (POST /api/v1/applicants)
+  3) Submit loan (POST /api/v1/loans) with header: 
+  4) Fetch loan (GET /api/v1/loans/{loan_id})
+  5) Metrics (GET /api/v1/metrics) [admin only]
+
+
+T

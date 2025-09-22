@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: evaluator-redis }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: evaluator-redis } }
+  template:
+    metadata: { labels: { app: evaluator-redis } }
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports: [{ containerPort: 6379 }]

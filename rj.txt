@@ -1,0 +1,36 @@
+docker compose up --build
+
+
+Access the services
+
+Frontend (React / Vite):
+Open in browser → http://localhost:5173
+
+API (FastAPI / Uvicorn):
+Health check → http://localhost:8000/api/v1/health/live
+
+Postgres Adminer:
+Open in browser → http://localhost:8081
+System: PostgreSQL
+Server: postgres (Docker service name)
+Username: app
+Password: app
+Database: evaluator
+
+
+Check logs anytime:
+docker compose logs -f
+docker compose logs -f api
+docker compose logs -f ui
+docker compose logs -f applicant-evaluator-api
+
+
+Stop all containers:
+docker compose down
+
+admin credential
+haritha@gmail.com
+haritha@17
+
+
+

@@ -1,0 +1,21 @@
+### Create applicant
+POST http://localhost:8000/api/v1/applicants
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "first_name":"Ravi",
+  "last_name":"Jee",
+  "email":"user1@example.com",
+  "phone":"+94112223344",
+  "dob":"1996-01-02",
+  "employment_status":"employed",
+  "employer_name":"Tech Lanka",
+  "monthly_income":120000,
+  "other_income":10000,
+  "existing_monthly_debt":15000
+}
+
+### Get applicant
+GET http://localhost:8000/api/v1/applicants/{{applicant_id}}
+Authorization: Bearer {{token}}

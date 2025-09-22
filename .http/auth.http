@@ -1,0 +1,18 @@
+### Register
+POST http://localhost:8000/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "user1@example.com",
+  "password": "User@12345",
+  "role": "applicant"
+}
+
+### Login
+POST http://localhost:8000/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user1@example.com",
+  "password": "User@12345"
+}

@@ -93,3 +93,21 @@ agents/
 - Add authentication/authorization middleware
 - Extend Score Agent to support multiple ML models (ensemble)
 - Integrate with frontend for loan approval workflow
+
+
+
+
+# Applicant Evaluator (FastAPI + React)
+
+See `.http/` for example requests and `Makefile` for common targets.
+
+Run local:
+- Backend: `uvicorn agents.applicant_evaluator.app.main:app --reload --port 8000`
+- Frontend: `npm --prefix loan-ui install && npm --prefix loan-ui run dev`
+
+Docker:
+- `docker compose up --build`
+
+Testing:
+- `make coverage` (coverage gate 80% in CI)
+

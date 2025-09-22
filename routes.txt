@@ -1,0 +1,13 @@
+GET            /api/v1/health/live
+GET            /api/v1/health/ready
+POST           /api/v1/auth/register
+POST           /api/v1/auth/login
+GET    [AUTH]  /api/v1/applicants
+POST   [AUTH]  /api/v1/applicants
+GET    [AUTH]  /api/v1/applicants/{applicant_id}
+PUT    [AUTH]  /api/v1/applicants/{applicant_id}
+DELETE [AUTH]  /api/v1/applicants/{applicant_id}
+GET    [AUTH]  /api/v1/loans
+POST   [AUTH]  /api/v1/loans
+GET    [AUTH]  /api/v1/loans/{loan_id}
+GET    [AUTH]  /api/v1/evaluations/{evaluation_id}

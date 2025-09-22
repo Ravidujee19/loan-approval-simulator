@@ -1,51 +1,46 @@
-import React, { useState } from "react";
-import { useAuth } from "../AuthContext.jsx";
-import { useNavigate } from "react-router-dom";
+import { useState } from 'react'
+import { login } from '../services/api.jsx'
+import { useAuth } from '../store/auth.js'
+import { Link, useNavigate } from 'react-router-dom'
+import '../styles/login.css'           
 
-export default function Login() {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const [username, setU] = useState("member1");
-  const [password, setP] = useState("password123");
-  const [err, setErr] = useState("");
+export default function Login(){
+  const [email,setEmail]=useState('ravidu@gmail.com')
+  const [password,setPassword]=useState('pizza@123')
+  const [err,setErr]=useState(null)
+  const { login: setAuth } = useAuth()
+  const nav = useNavigate()
 
-  const submit = async (e) => {
-    e.preventDefault();
-    setErr("");
-    try {
-      await login(username, password);
-      navigate("/"); // go to Applicant Form
-    } catch (e) {
-      setErr(e?.response?.data?.detail || "Login failed");
-    }
-  };
+  async function onSubmit(e){
+    e.preventDefault()
+    try{
+      const res = await login(email,password)
+      setAuth(res.access_token, res.role)
+      nav('/dashboard')
+    }catch(e){ setErr('Invalid credentials') }
+  }
 
   return (
-    <div className="container d-flex justify-content-center align-items-center min-vh-100">
-      <div className="row w-100 justify-content-center">
-        <div className="col-11 col-sm-8 col-md-6 col-lg-4">
-          <div className="card shadow">
-            <div className="card-body">
-              <h3 className="mb-4 text-center">Officer Login</h3>
-              <form onSubmit={submit} className="vstack gap-3">
-                <div>
-                  <label className="form-label">Username</label>
-                  <input className="form-control" value={username} onChange={(e)=>setU(e.target.value)} />
-                </div>
-                <div>
-                  <label className="form-label">Password</label>
-                  <input type="password" className="form-control" value={password} onChange={(e)=>setP(e.target.value)} />
-                </div>
-                {err && <div className="alert alert-danger">{err}</div>}
-                <button className="btn btn-primary w-100" type="submit">Sign in</button>
-                <p className="text-muted small text-center mb-0">
-                  Use <code>member1</code> / <code>password123</code>
-                </p>
-              </form>
-            </div>
-          </div>
+    <div className="login-page">
+      <div className="max-w-md mx-auto">
+        <div className="login-card">
+          <h1 className="text-2xl font-semibold mb-6">Login</h1>
+
+          {err && <div className="login-alert">{err}</div>}
+
+          <form onSubmit={onSubmit} className="space-y-4">
+            <input className="login-input" value={email}
+                   onChange={e=>setEmail(e.target.value)} placeholder="user1@example.com" />
+            <input className="login-input" type="password" value={password}
+                   onChange={e=>setPassword(e.target.value)} placeholder="••••••••" />
+            <button className="login-btn w-full" type="submit">Login</button>
+          </form>
+
+          <p className="mt-4 text-sm text-slate-400">
+            No account? <Link to="/register" className="login-link">Register</Link>
+          </p>
         </div>
       </div>
     </div>
-  );
+  )
 }

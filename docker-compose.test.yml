@@ -1,0 +1,21 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - example.env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://app:app@postgres:5432/evaluator
+      ENV: test
+      SEED_ON_START: "true"
+    depends_on:
+      - postgres
+    ports:
+      - "8001:8000"
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: evaluator
