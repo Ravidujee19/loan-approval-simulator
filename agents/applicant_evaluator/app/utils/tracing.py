@@ -1,7 +1,6 @@
  # OpenTelemetry (toggle via env)
  
 def setup_tracing() -> None:
-    # Keep minimal; can be expanded to real exporter
     try:
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
         from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor

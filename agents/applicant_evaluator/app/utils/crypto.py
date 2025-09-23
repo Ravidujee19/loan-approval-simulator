@@ -1,4 +1,3 @@
-# agents/applicant_evaluator/app/utils/crypto.py
 # bcrypt helpers
 
 from passlib.context import CryptContext

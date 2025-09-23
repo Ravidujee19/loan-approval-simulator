@@ -1,4 +1,3 @@
-# agents/applicant_evaluator/app/api/routes/loans.py
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from sqlalchemy.orm import joinedload
@@ -19,7 +18,7 @@ def create_loan(
     user=Depends(get_current_user),
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ):
-    # ---- JSON-safe key for idempotency (UUID, Decimal etc. become strings)
+    # JSON-safe key for idempotency (UUID, Decimal etc. become strings)
     key_payload = payload.model_dump(mode="json")
 
     if idempotency_key:

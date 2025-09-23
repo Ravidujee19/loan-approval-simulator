@@ -1,4 +1,3 @@
-# agents/applicant_evaluator/app/db/models.py
 # users, applicants, loan_applications, evaluations...
 import enum
 import uuid
@@ -83,14 +82,13 @@ class LoanApplication(Base):
     application_date: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     status: Mapped[LoanStatus] = mapped_column(Enum(LoanStatus), default=LoanStatus.submitted)
 
-    # Optional pointer you already had; NOT used by the relationship below.
     evaluation_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("evaluation.evaluation_id"), nullable=True, unique=True
     )
 
     applicant: Mapped["Applicant"] = relationship(back_populates="loans")
 
-    # ✅ Disambiguated 1–1 relationship via Evaluation.loan_id
+    # Disambiguated 1–1 relationship via Evaluation.loan_id
     evaluation: Mapped["Evaluation"] = relationship(
         "Evaluation",
         uselist=False,
@@ -124,7 +122,7 @@ class Evaluation(Base):
     reasons: Mapped[list[str]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
 
-    # ✅ Mirror relationship, explicitly tied to loan_id
+    # Mirror relationship, explicitly tied to loan_id
     loan: Mapped["LoanApplication"] = relationship(
         "LoanApplication",
         primaryjoin="Evaluation.loan_id == LoanApplication.id",

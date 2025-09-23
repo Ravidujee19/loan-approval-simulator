@@ -1,4 +1,3 @@
-# agents/applicant_evaluator/app/services/score_store.py
 from __future__ import annotations
 import json
 from decimal import Decimal

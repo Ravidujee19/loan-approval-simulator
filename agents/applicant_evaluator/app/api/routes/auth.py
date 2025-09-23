@@ -1,4 +1,3 @@
-# agents/applicant_evaluator/app/api/routes/auth.py
 # POST /auth/register, /auth/login
 
 from fastapi import APIRouter, HTTPException, status, Depends
@@ -14,18 +13,6 @@ from agents.applicant_evaluator.app.utils.crypto import verify_password, get_pas
 from agents.applicant_evaluator.app.api.deps import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-
-# @router.post("/register", response_model=UserOut)
-# def register(payload: UserCreate, db: DB):
-#     if db.scalar(select(User).where(User.email == payload.email)):
-#         raise HTTPException(status_code=400, detail="Email already registered")
-#     user = User(email=payload.email, password_hash=get_password_hash(payload.password), role=payload.role)
-#     db.add(user)
-#     db.commit()
-#     db.refresh(user)
-#     return UserOut.model_validate(user, from_attributes=True)
-#     # return UserOut.model_validate(user)
     
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register(payload: UserCreate, db: DB):

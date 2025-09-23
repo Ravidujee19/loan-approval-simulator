@@ -1,4 +1,3 @@
-# agents/applicant_evaluator/app/db/session.py
 # engine, session, pool config
 
 from sqlalchemy import create_engine

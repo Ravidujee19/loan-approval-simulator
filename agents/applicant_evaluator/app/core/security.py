@@ -1,4 +1,3 @@
-# agents/applicant_evaluator/app/core/security.py
 # JWT, password policy, headers, CORS
 
 from datetime import datetime, timedelta, timezone

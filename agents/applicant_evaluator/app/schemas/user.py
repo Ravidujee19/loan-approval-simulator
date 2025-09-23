@@ -7,14 +7,11 @@ from uuid import UUID
 class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
-    role: UserRole  # "admin" | "applicant"
-    # role: UserRole = UserRole.user
-
+    role: UserRole 
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
-
 
 class UserOut(BaseModel):
     id: UUID

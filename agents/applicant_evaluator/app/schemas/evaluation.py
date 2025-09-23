@@ -1,4 +1,3 @@
-# agents/applicant_evaluator/app/schemas/evaluation.py    
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict
@@ -17,17 +16,3 @@ class EvaluationOut(BaseModel):
     score: int
     reasons: list[str]
     created_at: datetime | None = None
- 
-    
-# from datetime import datetime
-# from pydantic import BaseModel
-
-
-# class EvaluationOut(BaseModel):
-#     evaluation_id: str
-#     loan_id: str | None = None
-#     eligibility: str
-#     score: int
-#     reasons: list[str]
-#     created_at: datetime | None = None
-
