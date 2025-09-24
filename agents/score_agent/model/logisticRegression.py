@@ -119,3 +119,8 @@ import json
 
 with open("agents/score_agent/logisticRegression_accuracy.json", "w") as f:
     json.dump({"accuracy": accuracy}, f)
+
+#save the cols of logreg
+logreg_columns = X.columns.tolist()
+with open("agents/score_agent/logisticRegression_columns.json", "w") as f:
+    json.dump(logreg_columns, f)
