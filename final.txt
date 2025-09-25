@@ -1,0 +1,15 @@
+# from repo root
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+# install
+pip install -r requirements.txt
+
+# run Applicant Evaluator from the repo root (have to give the path)
+uvicorn agents.applicant_evaluator.app.main:app --reload --host 0.0.0.0 --port 8000
+
+
+# for frontend
+inside the loan-approval-simulator\loan-ui
+npm i
+npm run dev

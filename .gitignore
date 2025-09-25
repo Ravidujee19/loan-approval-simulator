@@ -7,12 +7,16 @@ __pycache__/
 .mypy_cache/
 .coverage
 htmlcov/
+.venv/
 
 # Node
 loan-ui/node_modules/
 loan-ui/dist/
 loan-ui/.vite/
 *.log
+
+# Dev
+._ae_store
 
 # Env & local
 # .env
