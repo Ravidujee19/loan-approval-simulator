@@ -57,7 +57,7 @@ import os
 
 
 # Load dataset
-df = pd.read_csv("agents/score_agent/model/loan_approval_dataset.csv")
+df = pd.read_csv("data/raw/loan_approval_dataset.csv")
 print("Dataset loaded successfully!")
 print(df.head())
 
@@ -107,20 +107,20 @@ print("\nAccuracy:", accuracy_score(y_test, y_pred))
 import joblib
 
 #to save the model as a file to use in scoring agent
-joblib.dump(LReg, "agents/score_agent/logisticRegression.pkl")
+joblib.dump(LReg, "agents/score_agent/model/model_info/logisticRegression_info/logisticRegression.pkl")
 
 # To save the scaler
-joblib.dump(LRegScaler, "agents/score_agent/logisticRegressionScaler.pkl")
+joblib.dump(LRegScaler, "agents/score_agent/model/model_info/logisticRegression_info/logisticRegressionScaler.pkl")
 
 
 #To save the accuracy to compare the accuracies in score agent
 
 import json
 
-with open("agents/score_agent/logisticRegression_accuracy.json", "w") as f:
+with open("agents/score_agent/model/model_info/logisticRegression_info/logisticRegression_accuracy.json", "w") as f:
     json.dump({"accuracy": accuracy}, f)
 
 #save the cols of logreg
 logreg_columns = X.columns.tolist()
-with open("agents/score_agent/logisticRegression_columns.json", "w") as f:
+with open("agents/score_agent/model/model_info/logisticRegression_info/logisticRegression_columns.json", "w") as f:
     json.dump(logreg_columns, f)

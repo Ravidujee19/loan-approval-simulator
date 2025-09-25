@@ -5,7 +5,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
 import joblib
 
-df = pd.read_csv("agents/score_agent/model/loan_approval_dataset.csv")
+df = pd.read_csv("data/raw/loan_approval_dataset.csv")
 print("Dataset loaded successfully!")
 print(df.head())
 
@@ -61,18 +61,18 @@ accuracy = accuracy_score(y_test, y_pred)
 
 
 # Save MLP model and scaler
-joblib.dump(MLP, "agents/score_agent/mlpClassifier.pkl")
-joblib.dump(scaler, "agents/score_agent/mlpClassifierScaler.pkl")
+joblib.dump(MLP, "agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier.pkl")
+joblib.dump(scaler, "agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifierScaler.pkl")
 
 
 #to save the accuracy to use in the score agent
 import json
 
-with open("agents/score_agent/mlpClassifier_accuracy.json", "w") as f:
+with open("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier_accuracy.json", "w") as f:
     json.dump({"accuracy": accuracy}, f)
 
 
 #to save the training coloumns
 training_columns = X.columns.tolist()  
-with open("agents/score_agent/mlpClassifier_columns.json", "w") as f:
+with open("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier_columns.json", "w") as f:
     json.dump(training_columns, f)
