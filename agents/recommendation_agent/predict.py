@@ -1,104 +1,158 @@
-import joblib
-import pandas as pd
-import numpy as np
+# agents/recommendation_agent/predict.py
 import json
-from pathlib import Path
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
 
-# Config (same as train.py)
+# -----------------------------
+# Define the same class used in training (must appear BEFORE joblib.load)
+# -----------------------------
 ANNUAL_INTEREST = 0.12
 MONTHLY_RATE = ANNUAL_INTEREST / 12
-NUM_FEATURES = [
-    "no_of_dependents", "income_annum", "loan_amount", "loan_term", "cibil_score",
-    "residential_assets_value", "commercial_assets_value", "luxury_assets_value", "bank_asset_value"
+
+RAW_NUM = [
+    "no_of_dependents","income_annum","loan_amount","loan_term","cibil_score",
+    "residential_assets_value","commercial_assets_value","luxury_assets_value","bank_asset_value"
 ]
-CAT_FEATURES = ["education", "self_employed"]
+RAW_CAT = ["education","self_employed"]
 
-# Load artifacts
-PREPROC = joblib.load("models/reco_preproc.joblib")
-KMEANS = joblib.load("models/reco_kmeans.joblib")
+class RiskFeatureBuilder(BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
+        return self
 
-# Optional: load rules (if you saved some recommendations in a JSON file)
-def load_rules():
-    try:
-        with open("models/reco_rules.json", "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        # Default rules if no custom recommendations are available
-        return {
-            "0": {"name": "Low Risk", "approved": ["Automate EMI payments", "Prepay loans to save interest"], "rejected": ["Increase income or reduce loan amount"]},
-            "1": {"name": "Medium Risk", "approved": ["Keep DTI below 40%", "Consider a longer loan term"], "rejected": ["Improve credit score or increase assets"]},
-            "2": {"name": "High Risk", "approved": ["Consider loan insurance", "Improve financial stability"], "rejected": ["Reduce loan amount or increase down payment"]},
-        }
+    def transform(self, X):
+        df = X.copy()
+        df.columns = df.columns.str.strip()
+        needed = RAW_NUM + RAW_CAT
+        missing = [c for c in needed if c not in df.columns]
+        if missing:
+            raise ValueError(f"Missing required columns: {missing}")
+        df = df[needed].copy()
 
-RULES = load_rules()
+        # numerics -> numeric + impute
+        df[RAW_NUM] = df[RAW_NUM].apply(pd.to_numeric, errors="coerce")
+        df[RAW_NUM] = df[RAW_NUM].fillna(df[RAW_NUM].median(numeric_only=True))
 
-# Function to compute EMI
-def compute_emi(principal, monthly_rate, months):
-    if months <= 0 or principal <= 0:
-        return 0.0
-    r, n = monthly_rate, int(months)
-    if r == 0:
-        return principal / n
-    pow_ = (1 + r) ** n
-    return principal * r * pow_ / (pow_ - 1)
+        # guards
+        df["loan_term"] = df["loan_term"].clip(lower=1)  # years
+        for col in ["income_annum","loan_amount",
+                    "residential_assets_value","commercial_assets_value",
+                    "luxury_assets_value","bank_asset_value"]:
+            df[col] = df[col].clip(lower=0)
 
-# Function to process applicant data and make recommendations
-def recommend(applicant_data, approved):
-    # Clean and standardize the incoming data
-    row = {key.strip(): value for key, value in applicant_data.items()}  # Remove any accidental spaces
+        # categoricals
+        for c in RAW_CAT:
+            if df[c].isna().any():
+                df[c] = df[c].fillna("Unknown")
 
-    # Build DataFrame
-    df = pd.DataFrame([row])
-    
-    # Preprocess the features (same as in training)
-    X_processed = PREPROC.transform(df)
+        # engineered features
+        df["loan_to_income"] = df["loan_amount"] / (df["income_annum"] + 1e-6)
 
-    # Predict cluster
-    cluster = KMEANS.predict(X_processed)[0]
-    
-    # Compute dynamic values like EMI, DTI for advice
-    loan_amount = row.get("loan_amount", 0)
-    loan_term = row.get("loan_term", 1)
-    cibil_score = row.get("cibil_score", 0)
-    monthly_income = row.get("income_annum", 0) / 12
-    emi = compute_emi(loan_amount, MONTHLY_RATE, loan_term * 12)
-    dti = emi / monthly_income if monthly_income > 0 else np.nan
+        def compute_emi(p, r, n):
+            if p <= 0 or n <= 0:
+                return 0.0
+            pow_ = (1 + r) ** n
+            return p * r * pow_ / (pow_ - 1)
 
-    # Get the recommendations
-    persona = RULES.get(str(cluster), {}).get("name", f"Cluster {cluster}")
-    tips = RULES.get(str(cluster), {}).get("approved" if approved else "rejected", [])
-    
-    # Provide extra info like DTI and EMI
-    extra_info = [
-        f"Estimated EMI: {emi:,.2f}",
-        f"DTI (Debt-to-Income): {dti * 100:.2f}%" if not np.isnan(dti) else "DTI: Data unavailable"
-    ]
-    
-    return {
-       "cluster": int(cluster),
+        term_months = (df["loan_term"] * 12).astype(int).clip(lower=1)
+        df["emi"] = [compute_emi(p, MONTHLY_RATE, n) for p, n in zip(df["loan_amount"].values, term_months.values)]
+        df["monthly_income"] = df["income_annum"] / 12.0
+        df["dti"] = df["emi"] / (df["monthly_income"] + 1e-6)
 
-        "persona": persona,
-        "approved": approved,
-        "advice": extra_info + tips
-    }
+        for col in ["income_annum","loan_amount",
+                    "residential_assets_value","commercial_assets_value",
+                    "luxury_assets_value","bank_asset_value"]:
+            df[f"log_{col}"] = np.log1p(df[col].clip(lower=0))
 
-# Sample applicant data (for testing)
+        eng = ["loan_to_income","dti","emi","monthly_income",
+               "log_income_annum","log_loan_amount",
+               "log_residential_assets_value","log_commercial_assets_value",
+               "log_luxury_assets_value","log_bank_asset_value"]
+        df[eng] = df[eng].replace([np.inf, -np.inf], np.nan)
+        df[eng] = df[eng].fillna(df[eng].median(numeric_only=True))
+        return df
+
+# -----------------------------
+# Load artifacts (now that class exists)
+# -----------------------------
+PIPE = joblib.load("models/risk_cluster_pipeline.joblib")
+with open("models/cluster_to_risk.json") as f:
+    CLUSTER_TO_RISK = json.load(f)
+with open("models/recommendations.json") as f:
+    RECS = json.load(f)
+
+# Optional: override for extreme cases
+def rule_override(app):
+    income = float(app.get("income_annum", 0))
+    loan   = float(app.get("loan_amount", 0))
+    cibil  = float(app.get("cibil_score", 0))
+    monthly_income = income / 12.0
+    r = 0.12 / 12
+    n = max(int(float(app.get("loan_term", 1)) * 12), 1)
+    if loan > 0:
+        pow_ = (1 + r) ** n
+        emi = loan * r * pow_ / (pow_ - 1)
+    else:
+        emi = 0.0
+    dti = emi / (monthly_income + 1e-6)
+
+    if (cibil < 600 and (loan / (income + 1e-6) > 3 or dti > 0.6)):
+        return "High Risk"
+    if (cibil > 720 and (loan / (income + 1e-6) < 0.5 and dti < 0.25)):
+        return "Low Risk"
+    return None
+
+def predict_and_recommend(applicant: dict):
+    row = pd.DataFrame([applicant])
+    cluster = int(PIPE.predict(row)[0])
+    risk = CLUSTER_TO_RISK.get(str(cluster), f"Cluster {cluster}")
+    override = rule_override(applicant)
+    if override is not None:
+        risk = override
+    tips = RECS[risk]
+    return {"cluster": cluster, "risk_level": risk, "recommendations": tips}
+
+# Quick test
 if __name__ == "__main__":
-    sample_applicant = {
-        "no_of_dependents": 3,
-        "income_annum": 300000,            # Low annual income (Rs. 25,000/month)
-        "loan_amount": 1200000,            # High loan
-        "loan_term": 3,                    # Short term
-        "cibil_score": 580,                # Poor CIBIL score
-        "residential_assets_value": 0,
+    low = {
+        "no_of_dependents": 1,
+        "income_annum": 1500000,
+        "loan_amount": 30000000000,
+        "loan_term": 10,
+        "cibil_score": 690,
+        "residential_assets_value": 500000,
+        "commercial_assets_value": 200000,
+        "luxury_assets_value": 100000,
+        "bank_asset_value": 300000,
+        "education": "Graduate",
+        "self_employed": "No"
+    }
+    mid = {
+        "no_of_dependents": 2,
+        "income_annum": 600000,
+        "loan_amount": 500000,
+        "loan_term": 5,
+        "cibil_score": 650,
+        "residential_assets_value": 100000,
         "commercial_assets_value": 0,
         "luxury_assets_value": 0,
-        "bank_asset_value": 0,
+        "bank_asset_value": 50000,
+        "education": "Graduate",
+        "self_employed": "Yes"
+    }
+    high = {
+        "no_of_dependents": 4,
+        "income_annum": 20000000000,
+        "loan_amount": 10000,
+        "loan_term": 2,
+        "cibil_score": 680,
+        "residential_assets_value": 11111110,
+        "commercial_assets_value":1111110,
+        "luxury_assets_value": 111111110,
+        "bank_asset_value": 111110,
         "education": "Not Graduate",
         "self_employed": "Yes"
-}
-
-
-    # Test with approved = True
-    result = recommend(sample_applicant, approved=True)
-    print(json.dumps(result, indent=2))
+    }
+    for name, app in [("Low", low), ("Medium", mid), ("High", high)]:
+        print(name, "→", predict_and_recommend(app))

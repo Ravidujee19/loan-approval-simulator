@@ -1,0 +1,17 @@
+{
+  "Low Risk": [
+    "Maintain timely EMI payments",
+    "Consider part-prepayment to save interest",
+    "Keep credit utilization low (<30%)"
+  ],
+  "Medium Risk": [
+    "Keep DTI below ~40%; consider longer tenure",
+    "Avoid new credit lines until score improves",
+    "Track expenses; build 3\u20136 month emergency fund"
+  ],
+  "High Risk": [
+    "Reduce loan amount or increase down payment",
+    "Improve CIBIL for 3\u20136 months before reapplying",
+    "Add co-borrower or show additional income proof"
+  ]
+}
