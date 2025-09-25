@@ -2,12 +2,22 @@
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
+# for mac
+python3 -m venv .venv
+source .venv/bin/activate
+
 # install
 pip install -r requirements.txt
 
 # run Applicant Evaluator from the repo root (have to give the path)
-uvicorn agents.applicant_evaluator.app.main:app --reload --host 0.0.0.0 --port 8000
+python -m uvicorn agents.applicant_evaluator.app.main:app --reload --host 0.0.0.0 --port 8000
 
+# for mac
+python3 -m uvicorn agents.applicant_evaluator.app.main:app --reload --host 0.0.0.0 --port 8000
+
+
+# from repo root
+pip install -r requirements.txt
 
 # for frontend
 inside the loan-approval-simulator\loan-ui
