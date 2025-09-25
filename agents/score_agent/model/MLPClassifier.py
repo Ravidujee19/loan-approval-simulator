@@ -1,11 +1,13 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler,OneHotEncoder
+from sklearn.compose import ColumnTransformer
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
 import joblib
+import json
 
-df = pd.read_csv("agents/score_agent/model/loan_approval_dataset.csv")
+df = pd.read_csv("data/raw/loan_approval_dataset.csv")
 print("Dataset loaded successfully!")
 print(df.head())
 
@@ -23,15 +25,17 @@ y = df['loan_status'].map({'Approved': 1, 'Rejected': 0})
 print("Missing target values:", y.isnull().sum())
 
 # Features
-X = df.drop('loan_status', axis=1)
+X = df.drop(['loan_status', 'loan_id'], axis=1, errors='ignore')  # drop loan_id if exists
 
-# Drop any non-numeric ID columns if present
-if 'loan_id' in X.columns:
-    X = X.drop('loan_id', axis=1)
+# Identify numeric and categorical columns
+numeric_cols = X.select_dtypes(include=['int64', 'float64']).columns.tolist()
+categorical_cols = X.select_dtypes(include=['object']).columns.tolist()
 
-# Encode categorical columns
-X = pd.get_dummies(X, drop_first=True)
-
+# ColumnTransformer for scaling + encoding
+preprocessor = ColumnTransformer([
+    ('num', StandardScaler(), numeric_cols),
+    ('cat', OneHotEncoder(drop='first', handle_unknown='ignore'), categorical_cols)
+])
 
 
 #To split the training and test data
@@ -39,11 +43,15 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
-# Scale features
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
 
+# Fit preprocessor on training data
+X_train_transformed = preprocessor.fit_transform(X_train)
+X_test_transformed = preprocessor.transform(X_test)
+
+
+
+MLP = MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=500, random_state=42)
+""""
 MLP = MLPClassifier(
     hidden_layer_sizes=(100, 50),  # Two hidden layers
     activation='relu',             # The activation function=rectified linear unit activation function
@@ -51,28 +59,29 @@ MLP = MLPClassifier(
     max_iter=500,                  # Increase if not converging
     random_state=42
 )
+"""
 
-MLP.fit(X_train, y_train)
-y_pred = MLP.predict(X_test)
+MLP.fit(X_train_transformed, y_train)
+y_pred = MLP.predict(X_test_transformed)
 
 print("\n--- MLP Classifier Results ---")
 print("Accuracy:", accuracy_score(y_test, y_pred))
 accuracy = accuracy_score(y_test, y_pred)
 
 
-# Save MLP model and scaler
-joblib.dump(MLP, "agents/score_agent/mlpClassifier.pkl")
-joblib.dump(scaler, "agents/score_agent/mlpClassifierScaler.pkl")
+# Save MLP model and preprocessor
+joblib.dump(MLP, "agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier.pkl")
+joblib.dump(preprocessor, "agents/score_agent/model/model_info/mlpClassifier_info/preprocessor.pkl")
 
 
 #to save the accuracy to use in the score agent
 import json
 
-with open("agents/score_agent/mlpClassifier_accuracy.json", "w") as f:
+with open("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier_accuracy.json", "w") as f:
     json.dump({"accuracy": accuracy}, f)
 
 
 #to save the training coloumns
 training_columns = X.columns.tolist()  
-with open("agents/score_agent/mlpClassifier_columns.json", "w") as f:
+with open("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier_columns.json", "w") as f:
     json.dump(training_columns, f)
