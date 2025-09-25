@@ -3,6 +3,8 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 import uuid
+# import requests
+# from ..config import settings
 
 from ...schemas.applicant_profile import ApplicantProfile, Features, Quality, Consistency, Provenance
 from ...services import storage, nlp, rules, feature_builder, feature_vector, score_client
@@ -113,3 +115,18 @@ def get_profile(applicant_id: str, loan_id: str):
     if not data:
         raise HTTPException(status_code=404, detail="profile not found")
     return data
+
+
+# def send_applicant_input(applicant_id: str, loan_id: str, applicant_input: dict) -> dict:
+#     url = settings().RECOMMENDER_URL
+#     payload = {
+#         "applicant_id": applicant_id,
+#         "loan_id": loan_id,
+#         "applicant_input": applicant_input,
+#     }
+#     try:
+#         r = requests.post(url, json=payload, timeout=15)
+#         r.raise_for_status()
+#         return r.json()
+#     except Exception as e:
+#         return {"error": str(e)}

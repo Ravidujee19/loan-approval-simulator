@@ -13,6 +13,7 @@ def _find_env() -> str:
 class Settings(BaseSettings):
     STORAGE_DIR: str = "./_ae_store"
     SCORE_AGENT_URL: str = "http://localhost:8100/api/v1/score" # url ek ube
+    RECOMMENDER_URL: str = "http://localhost:8200/api/v1/recommend" # thenura
     CORS_ALLOW_ORIGINS: List[str] = ["*"]
 
     class Config:
