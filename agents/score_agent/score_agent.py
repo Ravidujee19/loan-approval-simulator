@@ -10,17 +10,17 @@ app = FastAPI()
 ###Creating a dictionary with all models info
 models_info = {
     "logisticRegression": {
-        "model": joblib.load("agents/score_agent/model_info/logisticRegression.pkl"),
-        "scaler": joblib.load("agents/score_agent/model_info/logisticRegressionScaler.pkl"),
-        "accuracy": json.load(open("agents/score_agent/model_info/logisticRegression_accuracy.json"))["accuracy"],
-        "columns": json.load(open("agents/score_agent/model_info/logisticRegression_columns.json"))
+        "model": joblib.load("agents/score_agent/model/model_info/logisticRegression_info/logisticRegression.pkl"),
+        "scaler": joblib.load("agents/score_agent/model/model_info/logisticRegression_info/logisticRegressionScaler.pkl"),
+        "accuracy": json.load(open("agents/score_agent/model/model_info/logisticRegression_info/logisticRegression_accuracy.json"))["accuracy"],
+        "columns": json.load(open("agents/score_agent/model/model_info/logisticRegression_info/logisticRegression_columns.json"))
 
     },
     "mlpClassifier": {
-        "model": joblib.load("agents/score_agent/model_info/mlpClassifier.pkl"),
-        "scaler": joblib.load("agents/score_agent/model_info/mlpClassifierScaler.pkl"),
-        "accuracy": json.load(open("agents/score_agent/model_info/mlpClassifier_accuracy.json"))["accuracy"],
-         "columns": json.load(open("agents/score_agent/model_info/mlpClassifier_columns.json"))
+        "model": joblib.load("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier.pkl"),
+        "scaler": joblib.load("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifierScaler.pkl"),
+        "accuracy": json.load(open("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier_accuracy.json"))["accuracy"],
+         "columns": json.load(open("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier_columns.json"))
     }
     ##Add thenura's model
 }
