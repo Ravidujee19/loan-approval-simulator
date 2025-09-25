@@ -2,7 +2,7 @@ from fastapi import FastAPI
 import pandas as pd
 import joblib
 import json
-import os
+
 
 app = FastAPI()
 
@@ -18,7 +18,7 @@ models_info = {
     },
     "mlpClassifier": {
         "model": joblib.load("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier.pkl"),
-        "scaler": joblib.load("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifierScaler.pkl"),
+        "preprocessor": joblib.load("agents/score_agent/model/model_info/mlpClassifier_info/preprocessor.pkl"),
         "accuracy": json.load(open("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier_accuracy.json"))["accuracy"],
          "columns": json.load(open("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier_columns.json"))
     }
@@ -28,7 +28,7 @@ models_info = {
 # Pick the best model by accuracy
 best_model_name = max(models_info, key=lambda name: models_info[name]["accuracy"])
 best_model = models_info[best_model_name]["model"]
-best_scaler = models_info[best_model_name]["scaler"]
+best_preprocessor = models_info[best_model_name].get("preprocessor", None)
 
 print(f"✅ Using best model: {best_model_name} (Accuracy: {models_info[best_model_name]['accuracy']:.4f})")
 
@@ -45,6 +45,7 @@ def score_applicant(applicant_data: dict):
     for col in applicant_df.select_dtypes(include='object').columns:
         applicant_df[col] = applicant_df[col].str.strip()
 
+    """
     # To encode categorical features
     applicant_df = pd.get_dummies(applicant_df, drop_first=True)
 
@@ -57,10 +58,15 @@ def score_applicant(applicant_data: dict):
         applicant_scaled = best_scaler.transform(applicant_df)
     else:
         applicant_scaled = applicant_df
+    
+    """
+
+    # Transform using preprocessor (handles scaling + encoding)
+    applicant_transformed = best_preprocessor.transform(applicant_df)
 
     # Predict
-    prob = best_model.predict_proba(applicant_scaled)[:, 1][0]
-    pred = best_model.predict(applicant_scaled)[0]
+    prob = best_model.predict_proba(applicant_transformed)[:, 1][0]
+    pred = best_model.predict(applicant_transformed)[0]
 
     #To get the score out of 100
     score = round(prob * 100, 2)
