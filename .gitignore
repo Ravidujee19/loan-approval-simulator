@@ -8,6 +8,7 @@ __pycache__/
 .coverage
 htmlcov/
 .venv/
+.vscode/
 
 # Node
 loan-ui/node_modules/
