@@ -24,7 +24,7 @@ from ...services import (
 router = APIRouter(prefix="/api/v1/applicants", tags=["applicant-evaluator"])
 
 
-# JSON body for form fields 
+# JSON body for form fields
 class FormPayload(BaseModel):
     loan_id: str
     no_of_dependents: int | None = None
@@ -38,6 +38,47 @@ class FormPayload(BaseModel):
     commercial_assets_value: float | None = None
     luxury_assets_value: float | None = None
     bank_asset_value: float | None = None
+
+
+# helper
+def _normalize_for_models(feat: dict) -> dict:
+    out = dict(feat)
+
+    # education
+    edu = str(out.get("education", "")).strip()
+    el = edu.lower()
+    if el in {"grad", "graduate", "g"}:
+        out["education"] = "Graduate"
+    elif el in {"not graduate", "not_graduate", "non graduate", "non-graduate", "nongraduate", "ng"}:
+        out["education"] = "Not Graduate"
+    elif edu:
+        out["education"] = "Unknown"
+    else:
+        out["education"] = "Unknown"
+
+    # self_employed -> Yes/No
+    se = out.get("self_employed")
+    if isinstance(se, bool):
+        out["self_employed"] = "Yes" if se else "No"
+    else:
+        s = str(se).strip().lower()
+        out["self_employed"] = "Yes" if s in {"yes", "y", "true", "1"} else "No"
+
+    # numeric coercions
+    num_keys = [
+        "no_of_dependents", "income_annum", "loan_amount", "loan_term", "cibil_score",
+        "residential_assets_value", "commercial_assets_value", "luxury_assets_value", "bank_asset_value",
+    ]
+    for k in num_keys:
+        v = out.get(k, None)
+        if v is None or v == "":
+            continue
+        try:
+            out[k] = float(v) if k != "loan_term" else int(float(v))  # loan_term is YEARS (int)
+        except Exception:
+            pass
+
+    return out
 
 
 @router.post("/", response_model=dict)
@@ -80,7 +121,7 @@ async def evaluate_with_form(applicant_id: str, payload: FormPayload, request: R
     warnings, hard_stops = rules.check(merged)
 
     # 4) build CSV-aligned features (exclude label loan_status)
-    feats: Features = feature_builder.to_features(merged)   
+    feats: Features = feature_builder.to_features(merged)
 
     # 5) quality score
     overall_conf = (sum(confidences.values()) / max(len(confidences), 1)) if confidences else 0.0
@@ -101,24 +142,15 @@ async def evaluate_with_form(applicant_id: str, payload: FormPayload, request: R
     order = feature_vector.FEATURE_ORDER
     vec = feature_vector.to_vector(feats, order)
 
-    # 7) SCORE AGENT (send only the CSV-aligned feature dict)
-    feature_dict = feature_vector.feats_to_dict(feats)  # bool self_employed here
-    # convert bool -> "Yes"/"No" so it matches score model training
-    score_features = {
-    **feature_dict,
-    "self_employed": "Yes" if bool(feature_dict.get("self_employed")) else "No",
-    }
-    scored = score_client.score(feature_dict) or {}
+    # 7) SCORE AGENT (SEND NORMALIZED DICT)
+    feature_dict = feature_vector.feats_to_dict(feats)
+    score_features = _normalize_for_models(feature_dict)  
+    scored = score_client.score(score_features) or {}    
 
-    # 8) RECOMMENDATION AGENT
-    rec_features = {
-        **feature_dict,
-        "self_employed": "Yes" if bool(feature_dict.get("self_employed")) else "No",
-    }
-
+    # 8) RECOMMENDATION AGENT (also normalized)
+    rec_features = _normalize_for_models(feature_dict)
     prediction = scored.get("prediction", "Rejected")
     approved = str(prediction).lower() == "approved"
-
     rec_input = {**rec_features, "approved": approved}
 
     recommendation = recommender_client.send_applicant_input(

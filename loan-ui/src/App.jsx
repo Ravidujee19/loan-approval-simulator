@@ -13,7 +13,7 @@ export default function App() {
     income_annum: "",
     loan_amount: "",
     loan_term: 2,                     // YEARS (2..20 in dataset)
-    cibil_score: 700,
+    cibil_score: 350,
     residential_assets_value: 0,
     commercial_assets_value: 0,
     luxury_assets_value: 0,
@@ -77,8 +77,8 @@ export default function App() {
   return (
     <div className="container">
       <div className="card">
-        <h1>Applicant Evaluator</h1>
-        <div style={{ marginBottom: 10 }}>
+        <h1>Loan Approval Simulator</h1>
+        {/* <div style={{ marginBottom: 10 }}>
           <span className="badge">
             {applicantId ? `Applicant: ${applicantId.slice(0, 8)}…` : "Creating…"}
           </span>
@@ -89,9 +89,9 @@ export default function App() {
         <div className="actions">
           <button disabled={!canSubmit || !files.length} onClick={handleUpload}>Upload Docs</button>
           <button className="secondary" onClick={() => setFiles([])}>Clear</button>
-        </div>
+        </div> */}
 
-        <h2>Form (CSV-aligned)</h2>
+        <h2>Enter Your Details</h2>
         <div className="row">
           <div>
             <label>Loan ID</label>
@@ -151,7 +151,7 @@ export default function App() {
 
         <div className="actions">
           <button disabled={!canSubmit} onClick={handleEvaluate}>
-            Evaluate & Send to Score Agent
+            Evaluate
           </button>
         </div>
       </div>

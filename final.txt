@@ -12,6 +12,8 @@ pip install -r requirements.txt
 pip install -r requirements_mac.txt
 
 
+.\.venv\Scripts\Activate.ps1
+
 # run agents from the repo root (have to give the path)
 python -m uvicorn agents.applicant_evaluator.app.main:app --reload --host 0.0.0.0 --port 8000
 python -m uvicorn agents.score_agent.score_agent:app --reload --host 0.0.0.0 --port 8001
