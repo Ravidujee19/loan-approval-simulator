@@ -163,8 +163,8 @@ async def evaluate_with_form(applicant_id: str, payload: FormPayload, request: R
     data = profile.model_dump()
     data["inference"] = scored
     data["recommendation"] = recommendation
-    data["vector"] = vec
-    data["vector_order"] = order
+    # data["vector"] = vec
+    # data["vector_order"] = order
 
     storage.save_profile(applicant_id, payload.loan_id, data)
     return data

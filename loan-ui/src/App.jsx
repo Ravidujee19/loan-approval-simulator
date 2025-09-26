@@ -7,17 +7,17 @@ export default function App() {
   const [files, setFiles] = useState([]);
   const [form, setForm] = useState({
     loan_id: crypto.randomUUID(),
-    no_of_dependents: 0,
-    education: "Graduate",            
-    self_employed: "No",             
-    income_annum: "",
-    loan_amount: "",
-    loan_term: 2,                     // YEARS (2..20 in dataset)
-    cibil_score: 350,
-    residential_assets_value: 0,
+    no_of_dependents: 2,
+    education: "Not Graduate",
+    self_employed: "Yes",
+    income_annum: 900000,
+    loan_amount: 2000000,
+    loan_term: 5,
+    cibil_score: 420,
+    residential_assets_value: 200000,
     commercial_assets_value: 0,
     luxury_assets_value: 0,
-    bank_asset_value: 0,
+    bank_asset_value: 50000,
   });
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
@@ -163,9 +163,9 @@ export default function App() {
             <span className={`badge ${result?.consistency?.hard_stops?.length ? 'stop' : 'ok'}`}>
               {result?.consistency?.hard_stops?.length ? 'Hard stops present' : 'No hard stops'}
             </span>
-            <span className="badge">
+            {/* <span className="badge">
               Confidence: {(result?.quality?.overall_confidence ?? 0).toFixed(2)}
-            </span>
+            </span> */}
           </div>
           <pre>{JSON.stringify(result, null, 2)}</pre>
         </div>
