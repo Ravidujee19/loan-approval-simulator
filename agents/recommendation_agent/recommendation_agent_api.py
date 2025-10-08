@@ -15,5 +15,5 @@ def recommend(applicant: dict):
     # scored_data = score_response.json()
 
     # Step 3: Use local ML function
-    result = predict_and_recommend(applicant)  # you can replace applicant with scored_data if you get it from Score Agent
+    result = predict_and_recommend(applicant) 
     return result

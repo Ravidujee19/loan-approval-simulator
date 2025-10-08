@@ -180,7 +180,7 @@ recs = {
 with open(MODELS_DIR / "recommendations.json", "w") as f:
     json.dump(recs, f, indent=2)
 
-print("\n✅ Training complete. Saved:")
+print("\nTraining complete. Saved:")
 print(f"  - {MODELS_DIR/'risk_cluster_pipeline.joblib'}")
 print(f"  - {MODELS_DIR/'cluster_to_risk.json'}")
 print(f"  - {MODELS_DIR/'recommendations.json'}")

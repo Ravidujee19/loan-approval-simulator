@@ -14,7 +14,6 @@ services:
     ports:
       - "8000:8000"
     healthcheck:
-      # Use Python so we don’t depend on curl/wget in the image
       test: ["CMD-SHELL", "python - << 'PY'\nimport sys,urllib.request\ntry:\n  urllib.request.urlopen('http://0.0.0.0:8000/api/v1/health/live', timeout=3)\n  sys.exit(0)\nexcept Exception:\n  sys.exit(1)\nPY"]
       interval: 10s
       timeout: 5s
@@ -49,7 +48,7 @@ services:
       POSTGRES_PASSWORD: app
       POSTGRES_DB: evaluator
     ports:
-      - "5433:5432"   # host 5433 → container 5432 (avoid local conflicts)
+      - "5433:5432"   # host 5433 -> container 5432 (avoid local conflicts)
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -73,7 +72,7 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
-    healthcheck:          # ✅ added from top version
+    healthcheck:        
       test: ["CMD-SHELL", "redis-cli ping"]
       interval: 10s
       timeout: 5s
@@ -84,82 +83,3 @@ volumes:
   pgdata:
 
 
-
-# services:
-#   api:
-#     build:
-#       context: .
-#       dockerfile: Dockerfile
-#     container_name: applicant-evaluator-api
-#     env_file:
-#       - example.env
-#     depends_on:
-#       postgres:
-#         condition: service_healthy   # wait for DB readiness
-#     ports:
-#       - "8000:8000"
-#     healthcheck:
-#       # Use Python so we don't depend on curl/wget in the image
-#       test: ["CMD-SHELL", "python - << 'PY'\nimport sys,urllib.request\ntry:\n  urllib.request.urlopen('http://localhost:8000/api/v1/health/live', timeout=3)\n  sys.exit(0)\nexcept Exception:\n  sys.exit(1)\nPY"]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 5
-#     read_only: true
-#     tmpfs:
-#       - /tmp
-#       - /srv/var
-#     restart: unless-stopped
-
-#   ui:
-#     build:
-#       context: ./loan-ui
-#     container_name: loan-ui
-#     env_file:
-#       - loan-ui/.env.example
-#     ports:
-#       - "5173:5173"
-#     depends_on:
-#       - api
-#     environment:
-#       # ensure Vite listens on all interfaces in container
-#       - HOST=0.0.0.0
-#       - PORT=5173
-#     restart: unless-stopped
-
-#   postgres:
-#     image: postgres:15
-#     container_name: pg
-#     environment:
-#       POSTGRES_USER: app
-#       POSTGRES_PASSWORD: app
-#       POSTGRES_DB: evaluator
-#     # If 5432 is busy on Windows, map to 5433 on host:
-#     ports:
-#       - "5433:5432"
-#     volumes:
-#       - pgdata:/var/lib/postgresql/data
-#     healthcheck:
-#       test: ["CMD-SHELL", "pg_isready -U app -d evaluator"]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 5
-#     restart: unless-stopped
-
-#   adminer:
-#     image: adminer:4
-#     container_name: adminer
-#     ports:
-#       - "8081:8080"        # host 8081 to avoid collisions
-#     depends_on:
-#       - postgres
-#     restart: unless-stopped
-
-#   redis:
-#     image: redis:7-alpine
-#     container_name: redis
-#     ports:
-#       - "6379:6379"
-#     restart: unless-stopped
-
-# volumes:
-#   pgdata: {}
