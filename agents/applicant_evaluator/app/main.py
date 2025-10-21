@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 # from app.api.routes.applicant_eval import router as applicant_eval_router
 from .api.routes.applicant_eval import router as applicant_eval_router
 from .config import settings  
+from .services import extractor
+
 
 app = FastAPI(title="Applicant Evaluator (NLP + Rules)", version="1.0.0")
 
