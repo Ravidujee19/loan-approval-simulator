@@ -1,5 +1,3 @@
-# agents/applicant_evaluator/app/services/extractor.py
-
 # Simple NLP-based extractor for applicant details
 
 import re
