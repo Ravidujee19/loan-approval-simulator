@@ -11,7 +11,7 @@ def check(fields: dict):
         except Exception:
             warnings.append("cibil_score_unparsable")
 
-    # Loan Amount sanity vs Income (simple heuristic)
+    # Loan Amount sanity vs Income
     try:
         income = float(fields.get("income_annum", 0))
         loan_amt = float(fields.get("loan_amount", 0))
