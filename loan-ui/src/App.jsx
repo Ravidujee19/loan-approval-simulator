@@ -98,7 +98,7 @@ export default function App() {
     }
   };
 
-  // --- Auto-prefill handlers ---
+  // Auto-prefill handlers
   const handlePrefillFromText = async (text) => {
     if (!text || !applicantId) return;
     setBusy(true);
@@ -131,7 +131,7 @@ export default function App() {
     }
   };
 
-  // --- Updated: merge text + PDF prefill with confidence ---
+  // merge text + PDF prefill with confidence 
   const applyPrefillResult = (res) => {
     if (!res) return;
     const fields = res.fields || {};
