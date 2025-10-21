@@ -9,6 +9,7 @@ __pycache__/
 htmlcov/
 .venv/
 .vscode/
+**/__init__.py
 
 # Node
 loan-ui/node_modules/
