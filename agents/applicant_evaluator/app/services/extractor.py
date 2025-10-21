@@ -11,7 +11,7 @@ def extract_applicant_details(text: str) -> dict:
     doc = nlp(text)
     data = {}
 
-    # --- Money-like entities (income / loan) ---
+    # for income / loan
     money_entities = [ent.text for ent in doc.ents if ent.label_ == "MONEY"]
     if money_entities:
         # crude heuristic: first is income, second is loan
@@ -21,29 +21,29 @@ def extract_applicant_details(text: str) -> dict:
         if len(clean_nums) >= 2:
             data["loan_amount"] = clean_nums[1]
 
-    # --- Loan term (years or months) ---
+    # Loan term
     m = re.search(r"(\d+)\s*(years?|months?)", text.lower())
     if m:
         term = int(m.group(1))
         data["loan_term"] = term * 12 if "year" in m.group(2) else term
 
-    # --- CIBIL or credit score ---
+    # CIBIL or credit score
     m = re.search(r"(?:cibil|credit)\s*score\s*(\d{3})", text.lower())
     if m:
         data["cibil_score"] = int(m.group(1))
 
-    # --- Dependents ---
+    # Dependents
     m = re.search(r"(\d+)\s*dependents?", text.lower())
     if m:
         data["no_of_dependents"] = int(m.group(1))
 
-    # --- Education ---
+    # Education
     if "graduate" in text.lower():
         data["education"] = "Graduate"
     elif "not graduate" in text.lower():
         data["education"] = "Not Graduate"
 
-    # --- Employment ---
+    # Employment
     if "self-employed" in text.lower() or "own business" in text.lower():
         data["self_employed"] = True
     else:
