@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 import uuid
+from io import BytesIO
 
 from ...schemas.applicant_profile import (
     ApplicantProfile,
@@ -20,6 +21,18 @@ from ...services import (
     score_client,        # manith
     recommender_client,  # thenura
 )
+try:
+    import PyPDF2
+except Exception:
+    PyPDF2 = None
+
+try:
+    from pdf2image import convert_from_bytes
+    import pytesseract
+except Exception:
+    convert_from_bytes = None
+    pytesseract = None
+
 
 router = APIRouter(prefix="/api/v1/applicants", tags=["applicant-evaluator"])
 
@@ -108,22 +121,22 @@ async def upload_documents(applicant_id: str, files: List[UploadFile] = File(...
 
 @router.post("/{applicant_id}/evaluate-with-form", response_model=dict)
 async def evaluate_with_form(applicant_id: str, payload: FormPayload, request: Request):
-    # 1) pull docs and run lightweight NLP
+    # pull docs and run lightweight NLP
     docs = storage.list_docs(applicant_id)
     raw_texts = [storage.read_text(d["path"]) for d in docs]
     doc_fields, provenance, confidences, extras = nlp.extract_from_texts(docs, raw_texts)
 
-    # 2) merge form → doc (form wins when provided)
+    # merge form -> doc (form wins when provided)
     provided = {k: v for k, v in payload.model_dump().items() if v is not None}
     merged = {**doc_fields, **provided}
 
-    # 3) rules checks
+    # rules checks
     warnings, hard_stops = rules.check(merged)
 
-    # 4) build CSV-aligned features (exclude label loan_status)
+    # build CSV-aligned features
     feats: Features = feature_builder.to_features(merged)
 
-    # 5) quality score
+    # quality score
     overall_conf = (sum(confidences.values()) / max(len(confidences), 1)) if confidences else 0.0
     quality = Quality(overall_confidence=overall_conf, field_confidence=confidences)
 
@@ -138,16 +151,16 @@ async def evaluate_with_form(applicant_id: str, payload: FormPayload, request: R
         timestamp=datetime.utcnow().isoformat() + "Z",
     )
 
-    # 6) construct vector in the exact CSV order
+    # construct vector in the exact CSV order
     order = feature_vector.FEATURE_ORDER
     vec = feature_vector.to_vector(feats, order)
 
-    # 7) SCORE AGENT (SEND NORMALIZED DICT)
+    # SCORE AGENT (SEND NORMALIZED DICT)
     feature_dict = feature_vector.feats_to_dict(feats)
-    score_features = _normalize_for_models(feature_dict)  
-    scored = score_client.score(score_features) or {}    
+    score_features = _normalize_for_models(feature_dict)
+    scored = score_client.score(score_features) or {}
 
-    # 8) RECOMMENDATION AGENT (also normalized)
+    # RECOMMENDATION AGENT (also normalized)
     rec_features = _normalize_for_models(feature_dict)
     prediction = scored.get("prediction", "Rejected")
     approved = str(prediction).lower() == "approved"
@@ -159,7 +172,7 @@ async def evaluate_with_form(applicant_id: str, payload: FormPayload, request: R
         applicant_input=rec_input,
     ) or {}
 
-    # 9) persist + respond
+    # persist + respond
     data = profile.model_dump()
     data["inference"] = scored
     data["recommendation"] = recommendation
@@ -176,3 +189,79 @@ def get_profile(applicant_id: str, loan_id: str):
     if not data:
         raise HTTPException(status_code=404, detail="profile not found")
     return data
+
+
+# Prefill endpoints
+
+@router.post("/{applicant_id}/prefill-from-text", response_model=dict)
+async def prefill_from_text(applicant_id: str, payload: dict):
+    """
+    Accepts JSON body: { "text": "..." } or { "texts": ["...", "..."] }
+    Returns extracted fields, provenance and confidences from your nlp extractor.
+    """
+    texts = []
+    if isinstance(payload, dict):
+        if payload.get("text"):
+            texts = [payload["text"]]
+        elif payload.get("texts"):
+            texts = payload["texts"]
+
+    if not texts:
+        raise HTTPException(status_code=400, detail="Provide 'text' or 'texts' in JSON body")
+
+    # Call existing extractor. The extractor in other endpoints is called with (docs, raw_texts),
+    # here we don't have storage docs so pass empty docs list and raw_texts list.
+    doc_fields, provenance, confidences, extras = nlp.extract_from_texts([], texts)
+
+    return {"fields": doc_fields, "provenance": provenance, "confidence": confidences, "extras": extras}
+
+
+@router.post("/{applicant_id}/prefill-from-pdf", response_model=dict)
+async def prefill_from_pdf(applicant_id: str, file: UploadFile = File(...)):
+    """
+    Accepts a PDF file upload and returns extracted fields.
+    Tries PyPDF2 text extraction first (digital PDFs), then OCR fallback (pdf2image + pytesseract) if available.
+    """
+    contents = await file.read()
+    texts = []
+
+    # Try PyPDF2 for text extraction (digital PDF)
+    if PyPDF2 is not None:
+        try:
+            reader = PyPDF2.PdfReader(BytesIO(contents))
+            txt_pages = []
+            for p in reader.pages:
+                try:
+                    txt = p.extract_text() or ""
+                except Exception:
+                    txt = ""
+                txt_pages.append(txt)
+            joined_text = "\n".join(txt_pages).strip()
+            if joined_text:
+                texts.append(joined_text)
+        except Exception:
+            # PyPDF2 failed -> will attempt OCR if available
+            pass
+
+    # OCR fallback (if pdf2image & pytesseract present) for scanned PDFs
+    if not texts and convert_from_bytes is not None and pytesseract is not None:
+        try:
+            images = convert_from_bytes(contents, dpi=200)
+            ocr_texts = []
+            for img in images:
+                text = pytesseract.image_to_string(img)
+                ocr_texts.append(text)
+            if ocr_texts:
+                texts.append("\n".join(ocr_texts))
+        except Exception:
+            pass
+
+    if not texts:
+        raise HTTPException(
+            status_code=400,
+            detail="Could not extract text from PDF. Install PyPDF2 or enable OCR dependencies (pdf2image + pytesseract + host binaries).",
+        )
+
+    doc_fields, provenance, confidences, extras = nlp.extract_from_texts([], texts)
+    return {"fields": doc_fields, "provenance": provenance, "confidence": confidences, "extras": extras}
+
