@@ -11,27 +11,25 @@ app = FastAPI()
 models_info = {
     "logisticRegression": {
         "model": joblib.load("agents/score_agent/logisticRegression.pkl"),
-        "scaler": joblib.load("agents/score_agent/logisticRegressionScaler.pkl"),
-        "accuracy": json.load(open("agents/score_agent/logisticRegression_accuracy.json"))["accuracy"]
+        "preprocessor": joblib.load("agents/score_agent/logisticRegression_preprocessor.pkl"),
+        "metrics": json.load(open("agents/score_agent/logisticRegression_metrics.json"))
     },
     "mlpClassifier": {
         "model": joblib.load("agents/score_agent/mlpClassifier.pkl"),
-        "scaler": joblib.load("agents/score_agent/mlpClassifierScaler.pkl"),
-        "accuracy": json.load(open("agents/score_agent/mlpClassifier_accuracy.json"))["accuracy"]
+        "preprocessor": joblib.load("agents/score_agent/mlpClassifier_preprocessor.pkl"), 
+        "metrics": json.load(open("agents/score_agent/mlpClassifier_metrics.json"))
     }
     ##Add thenura's model
 }
 
 # Pick the best model by accuracy
-best_model_name = max(models_info, key=lambda name: models_info[name]["accuracy"])
+best_model_name = max(models_info, key=lambda name: models_info[name]["metrics"]["accuracy"])
 best_model = models_info[best_model_name]["model"]
-best_scaler = models_info[best_model_name]["scaler"]
+best_preprocessor = models_info[best_model_name].get("preprocessor", None)
+best_metrics = models_info[best_model_name]["metrics"]
 
-print(f"✅ Using best model: {best_model_name} (Accuracy: {models_info[best_model_name]['accuracy']:.4f})")
 
-BASE_DIR = os.path.dirname(__file__)  # points to agents/score_agent
-with open(os.path.join(BASE_DIR, "mlpClassifier_columns.json")) as f:
-    mlp_columns = json.load(f)
+print(f"Using best model: {best_model_name} (Accuracy: {best_metrics['accuracy']:.4f})")
 
 
 #####after done training models must check which gets the highjest accuracy and then get the one with highest accuracy
@@ -45,32 +43,28 @@ def score_applicant(applicant_data: dict):
     for col in applicant_df.select_dtypes(include='object').columns:
         applicant_df[col] = applicant_df[col].str.strip()
 
-    # To encode categorical features
-    applicant_df = pd.get_dummies(applicant_df, drop_first=True)
-
-    # Align with training features
-    applicant_df = applicant_df.reindex(columns=mlp_columns, fill_value=0)
-
-    
-    ##Incase if the model which was the best doesnt have a scaler
-    if best_scaler is not None:
-        applicant_scaled = best_scaler.transform(applicant_df)
-    else:
-        applicant_scaled = applicant_df
+   # Transform using preprocessor (handles encoding + scaling)
+    applicant_transformed = best_preprocessor.transform(applicant_df)
 
     # Predict
-    prob = best_model.predict_proba(applicant_scaled)[:, 1][0]
-    pred = best_model.predict(applicant_scaled)[0]
+    prob = best_model.predict_proba(applicant_transformed)[:, 1][0]
+    pred = best_model.predict(applicant_transformed)[0]
 
     #To get the score out of 100
     score = round(prob * 100, 2)
 
     
-
     return {
         "model_used": best_model_name,
         "prediction": "Approved" if pred == 1 else "Rejected",
-        "score": score
+        "score": score,
+        "model_metrics": {
+            "accuracy": best_metrics.get("accuracy"),
+            "precision": best_metrics.get("precision"),
+            "recall": best_metrics.get("recall"),
+            "f1_score": best_metrics.get("f1_score"),
+            "roc_auc": best_metrics.get("roc_auc")
+        }
     }
 
 

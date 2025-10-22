@@ -50,10 +50,13 @@ print("Accuracy:", accuracy_score(y_test, y_pred))
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 import os
+import joblib
+import json
 
 
 # Load dataset
@@ -81,41 +84,57 @@ X = df.drop('loan_status', axis=1)
 if 'loan_id' in X.columns:
     X = X.drop('loan_id', axis=1)
 
-# Encode categorical columns
-X = pd.get_dummies(X, drop_first=True)
+
 
 # Train-test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split( X, y, test_size=0.2, stratify=y, random_state=42)
 
-# Scale features
-LRegScaler = StandardScaler()
-X_train = LRegScaler.fit_transform(X_train)
-X_test = LRegScaler.transform(X_test)
+categorical_cols = X_train.select_dtypes(include=['object']).columns.tolist()
+numeric_cols = X_train.select_dtypes(include=['int64', 'float64']).columns.tolist()
+
+preprocessor = ColumnTransformer(transformers=[
+    ('num', StandardScaler(), numeric_cols),
+    ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_cols)
+])
+
+# Fit preprocessor on training data and transform
+X_train_processed = preprocessor.fit_transform(X_train)
+X_test_processed = preprocessor.transform(X_test)
+
+
 
 # Train logistic regression
-LReg = LogisticRegression()
-LReg.fit(X_train, y_train)
+LReg = LogisticRegression(max_iter=500, random_state=42)
+LReg.fit(X_train_processed, y_train)
 
 # Predict and evaluate
-y_pred = LReg.predict(X_test)
 
-accuracy = accuracy_score(y_test, y_pred)
+y_pred = LReg.predict(X_test_processed)
+y_prob = LReg.predict_proba(X_test_processed)[:, 1] 
 
-print("\nAccuracy:", accuracy_score(y_test, y_pred))
+metrics = {
+    "accuracy": accuracy_score(y_test, y_pred),
+    "precision": precision_score(y_test, y_pred),
+    "recall": recall_score(y_test, y_pred),
+    "f1_score": f1_score(y_test, y_pred),
+    "roc_auc": roc_auc_score(y_test, y_prob)
+}
 
 
-import joblib
+
+print("\n-- Logistic Regression Metrics --")
+for key, value in metrics.items():
+    print(f"{key}: {value:.4f}")
+
 
 #to save the model as a file to use in scoring agent
 joblib.dump(LReg, "agents/score_agent/logisticRegression.pkl")
 
-# To save the scaler
-joblib.dump(LRegScaler, "agents/score_agent/logisticRegressionScaler.pkl")
+# To save the preprocessor
+joblib.dump(preprocessor, "agents/score_agent/logisticRegression_preprocessor.pkl")
+
+with open("agents/score_agent/logisticRegression_metrics.json", "w") as f:
+    json.dump(metrics, f, indent=4)
 
 
-#To save the accuracy to compare the accuracies in score agent
-
-import json
-
-with open("agents/score_agent/logisticRegression_accuracy.json", "w") as f:
-    json.dump({"accuracy": accuracy}, f)
+print("\nLogistic Regression model, preprocessor, and metrics saved successfully!")
