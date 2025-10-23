@@ -10,7 +10,7 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
-# 1. Load dataset
+# Load dataset
 df = pd.read_csv("data/raw/loan_approval_dataset.csv")
 
 # Select numerical features and categorical features separately
@@ -35,7 +35,7 @@ df[cat_features] = df[cat_features].fillna("Unknown")
 
 X = df[num_features + cat_features]
 
-# 4. Preprocess: scale numerics + one-hot encode categoricals
+# Preprocess: scale numerics + one-hot encode categoricals
 try:
     # sklearn >= 1.2
     ohe = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
@@ -53,16 +53,16 @@ preproc = ColumnTransformer(
 
 X_prep = preproc.fit_transform(X)
 
-# 4) Train K-Means
+# Train K-Means
 kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
 kmeans.fit(X_prep)
 
-# Optional: show cluster sizes
+# Show cluster sizes
 labels = kmeans.labels_
 unique, counts = np.unique(labels, return_counts=True)
 print("[info] cluster sizes:", dict(zip(unique, counts)))
 
-# 5) Save artifacts
+# Save artifacts
 Path("models").mkdir(exist_ok=True)
 joblib.dump(preproc, "models/reco_preproc.joblib")
 joblib.dump(kmeans, "models/reco_kmeans.joblib")
@@ -72,9 +72,8 @@ print("✅ Training completed. Saved: models/reco_preproc.joblib, models/reco_km
 print("Inertia:", kmeans.inertia_)
 print("Silhouette Score:", silhouette_score(X_prep, kmeans.labels_))
 
-# ---------------------------- New code for PCA and t-SNE ----------------------------
 
-# 6) PCA for dimensionality reduction to 2D
+# PCA for dimensionality reduction to 2D
 pca = PCA(n_components=2)
 X_pca = pca.fit_transform(X_prep)
 
@@ -87,7 +86,7 @@ plt.ylabel('PCA Component 2')
 plt.colorbar(label='Cluster')
 plt.show()
 
-# 7) t-SNE for dimensionality reduction to 2D
+# t-SNE for dimensionality reduction to 2D
 tsne = TSNE(n_components=2)
 X_tsne = tsne.fit_transform(X_prep)
 

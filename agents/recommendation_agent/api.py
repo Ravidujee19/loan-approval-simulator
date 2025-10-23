@@ -1,7 +1,8 @@
-# agents/recommendation_agent/api.py
 from fastapi import FastAPI
 from pydantic import BaseModel
 from .predict import recommend
+from dotenv import load_dotenv
+load_dotenv()
 
 app = FastAPI(title="Recommendation Agent")
 

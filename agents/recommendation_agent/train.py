@@ -10,7 +10,6 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-# ---------------- CONFIG ----------------
 RAW_NUM = [
     "no_of_dependents","income_annum","loan_amount","loan_term","cibil_score",
     "residential_assets_value","commercial_assets_value","luxury_assets_value","bank_asset_value"
@@ -23,7 +22,7 @@ MONTHLY_RATE = ANNUAL_INTEREST / 12
 MODELS_DIR = Path("models")
 MODELS_DIR.mkdir(exist_ok=True)
 
-# ------------- Feature Engineering Transformer -------------
+# Feature Engineering Transformer
 class RiskFeatureBuilder(BaseEstimator, TransformerMixin):
     """Takes a DataFrame with the 11 raw columns and returns a DataFrame
        with engineered risk features appended (loan_to_income, emi, dti, logs),
@@ -101,11 +100,11 @@ NUM_FEATURES = [
 ]
 CAT_FEATURES = RAW_CAT
 
-# ---------------- LOAD DATA ----------------
+# Load the data
 df_raw = pd.read_csv("data/raw/loan_approval_dataset.csv")
 df_raw.columns = df_raw.columns.str.strip()
 
-# ---------------- PIPELINE ----------------
+# Pipeline components
 # OneHotEncoder API compat
 try:
     ohe = OneHotEncoder(handle_unknown="ignore", sparse_output=False)  # sklearn >= 1.2
@@ -126,14 +125,14 @@ pipe = Pipeline(steps=[
     ("kmeans", KMeans(n_clusters=3, random_state=42, n_init=10)),
 ])
 
-# ---------------- FIT ----------------
+# Fit the pipeline
 pipe.fit(df_raw)  # fits feats -> prep -> kmeans
 labels = pipe.named_steps["kmeans"].labels_
 
 print("Cluster counts:", np.bincount(labels))
 
-# ---------------- PROFILE & MAP RISK ----------------
-# Build engineered frame for profiling (same transform as in pipeline)
+# Profile & Map Risk Levels
+# Build engineered frame for profiling 
 fe = RiskFeatureBuilder().transform(df_raw)
 profiling = pd.DataFrame({
     "cluster": labels,
@@ -154,12 +153,12 @@ risk_names = ["High Risk","Medium Risk","Low Risk"]
 cluster_to_risk = {int(c): risk_names[i] for i, c in enumerate(prof_sorted.index)}
 print("\n[Cluster → Risk Mapping]\n", cluster_to_risk)
 
-# ---------------- SAVE ----------------
+# Save the models and mappings
 joblib.dump(pipe, MODELS_DIR / "risk_cluster_pipeline.joblib")
 with open(MODELS_DIR / "cluster_to_risk.json", "w") as f:
     json.dump({str(k): v for k, v in cluster_to_risk.items()}, f, indent=2)
 
-# Optional: basic recommendations you can edit later
+# Basic recommendations
 recs = {
     "Low Risk": [
         "Maintain timely EMI payments",
