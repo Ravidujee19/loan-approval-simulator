@@ -60,7 +60,7 @@ import json
 
 
 # Load dataset
-df = pd.read_csv("agents/score_agent/model/loan_approval_dataset.csv")
+df = pd.read_csv("data/raw/loan_approval_dataset.csv")
 print("Dataset loaded successfully!")
 print(df.head())
 
@@ -128,7 +128,7 @@ for key, value in metrics.items():
 
 
 #to save the model as a file to use in scoring agent
-joblib.dump(LReg, "agents/score_agent/logisticRegression.pkl")
+joblib.dump(LReg, "agents/score_agent/model/model_info/logisticRegression_info/logisticRegression.pkl")
 
 # To save the preprocessor
 joblib.dump(preprocessor, "agents/score_agent/logisticRegression_preprocessor.pkl")

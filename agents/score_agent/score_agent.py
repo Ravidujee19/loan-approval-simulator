@@ -119,4 +119,3 @@ def score_applicant(applicant_data: dict):
 @app.post("/score")         ####ravidu aiyyas applicant data comes here
 def score_endpoint(applicant: dict):
     return score_applicant(applicant)
-

@@ -1,104 +1,111 @@
+from __future__ import annotations
+from pathlib import Path
+import os, json, sys
 import joblib
 import pandas as pd
-import numpy as np
-import json
-from pathlib import Path
 
-# Config (same as train.py)
-ANNUAL_INTEREST = 0.12
-MONTHLY_RATE = ANNUAL_INTEREST / 12
-NUM_FEATURES = [
-    "no_of_dependents", "income_annum", "loan_amount", "loan_term", "cibil_score",
-    "residential_assets_value", "commercial_assets_value", "luxury_assets_value", "bank_asset_value"
+from agents.recommendation_agent.features import RiskFeatureBuilder  # noqa: F401
+import types
+main_mod = sys.modules.get("__main__")
+if main_mod is None:
+    main_mod = types.ModuleType("__main__")
+    sys.modules["__main__"] = main_mod
+setattr(main_mod, "RiskFeatureBuilder", RiskFeatureBuilder)
+
+HERE = Path(__file__).parent                 
+REPO_ROOT = HERE.parents[1]                   
+
+CANDIDATE_DIRS = [
+    HERE / "models",                          
+    REPO_ROOT / "models",                     
+    REPO_ROOT / "agents" / "score_agent" / "models",  
 ]
-CAT_FEATURES = ["education", "self_employed"]
 
-# Load artifacts
-PREPROC = joblib.load("models/reco_preproc.joblib")
-KMEANS = joblib.load("models/reco_kmeans.joblib")
+MODEL_FILENAME = "risk_cluster_pipeline.joblib"
+CLUSTER_JSON = "cluster_to_risk.json"
+RECS_JSON = "recommendations.json"
 
-# Optional: load rules (if you saved some recommendations in a JSON file)
-def load_rules():
+def _light_validate(pipe) -> bool:
+    """Accept if the object has a predict()."""
+    return hasattr(pipe, "predict")
+
+def _try_load(dir_path: Path):
+    mp = dir_path / MODEL_FILENAME
+    if not mp.exists():
+        return None
     try:
-        with open("models/reco_rules.json", "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        # Default rules if no custom recommendations are available
-        return {
-            "0": {"name": "Low Risk", "approved": ["Automate EMI payments", "Prepay loans to save interest"], "rejected": ["Increase income or reduce loan amount"]},
-            "1": {"name": "Medium Risk", "approved": ["Keep DTI below 40%", "Consider a longer loan term"], "rejected": ["Improve credit score or increase assets"]},
-            "2": {"name": "High Risk", "approved": ["Consider loan insurance", "Improve financial stability"], "rejected": ["Reduce loan amount or increase down payment"]},
-        }
+        pipe = joblib.load(mp)
+    except Exception:
+        return None
+    if not _light_validate(pipe):
+        return None
+    return pipe, dir_path / CLUSTER_JSON, dir_path / RECS_JSON
 
-RULES = load_rules()
+def _resolve_model():
+    # Mannual override
+    override = os.getenv("RECOMMENDER_MODEL_DIR")
+    if override:
+        out = _try_load(Path(override))
+        if out:
+            return out
 
-# Function to compute EMI
-def compute_emi(principal, monthly_rate, months):
-    if months <= 0 or principal <= 0:
-        return 0.0
-    r, n = monthly_rate, int(months)
-    if r == 0:
-        return principal / n
-    pow_ = (1 + r) ** n
-    return principal * r * pow_ / (pow_ - 1)
+    # check candidates
+    for d in CANDIDATE_DIRS:
+        out = _try_load(d)
+        if out:
+            return out
 
-# Function to process applicant data and make recommendations
-def recommend(applicant_data, approved):
-    # Clean and standardize the incoming data
-    row = {key.strip(): value for key, value in applicant_data.items()}  # Remove any accidental spaces
+    # recursive search from repo root
+    for mp in REPO_ROOT.rglob(MODEL_FILENAME):
+        out = _try_load(mp.parent)
+        if out:
+            return out
 
-    # Build DataFrame
-    df = pd.DataFrame([row])
-    
-    # Preprocess the features (same as in training)
-    X_processed = PREPROC.transform(df)
+    tried = ", ".join(str(p) for p in CANDIDATE_DIRS)
+    raise FileNotFoundError(
+        f"Could not load {MODEL_FILENAME}. Tried: {tried} and recursive search under {REPO_ROOT}.\n"
+        "Set RECOMMENDER_MODEL_DIR to the correct folder if needed."
+    )
 
-    # Predict cluster
-    cluster = KMEANS.predict(X_processed)[0]
-    
-    # Compute dynamic values like EMI, DTI for advice
-    loan_amount = row.get("loan_amount", 0)
-    loan_term = row.get("loan_term", 1)
-    cibil_score = row.get("cibil_score", 0)
-    monthly_income = row.get("income_annum", 0) / 12
-    emi = compute_emi(loan_amount, MONTHLY_RATE, loan_term * 12)
-    dti = emi / monthly_income if monthly_income > 0 else np.nan
+PIPE, CLUSTER_MAP_PATH, RECS_PATH = _resolve_model()
 
-    # Get the recommendations
-    persona = RULES.get(str(cluster), {}).get("name", f"Cluster {cluster}")
-    tips = RULES.get(str(cluster), {}).get("approved" if approved else "rejected", [])
-    
-    # Provide extra info like DTI and EMI
-    extra_info = [
-        f"Estimated EMI: {emi:,.2f}",
-        f"DTI (Debt-to-Income): {dti * 100:.2f}%" if not np.isnan(dti) else "DTI: Data unavailable"
-    ]
-    
-    return {
-       "cluster": int(cluster),
+if not CLUSTER_MAP_PATH.exists():
+    raise FileNotFoundError(f"Missing {CLUSTER_JSON} next to model at: {CLUSTER_MAP_PATH}")
+if not RECS_PATH.exists():
+    raise FileNotFoundError(f"Missing {RECS_JSON} next to model at: {RECS_PATH}")
 
-        "persona": persona,
-        "approved": approved,
-        "advice": extra_info + tips
-    }
+with CLUSTER_MAP_PATH.open() as f:
+    CLUSTER_TO_RISK = json.load(f)
+with RECS_PATH.open() as f:
+    RECS = json.load(f)
 
-# Sample applicant data (for testing)
-if __name__ == "__main__":
-    sample_applicant = {
-        "no_of_dependents": 3,
-        "income_annum": 300000,            # Low annual income (Rs. 25,000/month)
-        "loan_amount": 1200000,            # High loan
-        "loan_term": 3,                    # Short term
-        "cibil_score": 580,                # Poor CIBIL score
-        "residential_assets_value": 0,
-        "commercial_assets_value": 0,
-        "luxury_assets_value": 0,
-        "bank_asset_value": 0,
-        "education": "Not Graduate",
-        "self_employed": "Yes"
-}
+def rule_override(app: dict) -> str | None:
+    income = float(app.get("income_annum", 0))
+    loan   = float(app.get("loan_amount", 0))
+    cibil  = float(app.get("cibil_score", 0))
+    monthly_income = income / 12.0
+    r = 0.12 / 12
+    n = max(int(float(app.get("loan_term", 1)) * 12), 1)
+    if loan > 0:
+        pow_ = (1 + r) ** n
+        emi = loan * r * pow_ / (pow_ - 1)
+    else:
+        emi = 0.0
+    dti = emi / (monthly_income + 1e-6)
+    if (cibil < 600 and (loan / (income + 1e-6) > 3 or dti > 0.6)): return "High Risk"
+    if (cibil > 720 and (loan / (income + 1e-6) < 0.5 and dti < 0.25)): return "Low Risk"
+    return None
 
+def predict_and_recommend(applicant: dict) -> dict:
+    row = pd.DataFrame([applicant])
+    cluster = int(PIPE.predict(row)[0])
+    risk = CLUSTER_TO_RISK.get(str(cluster), f"Cluster {cluster}")
+    override = rule_override(applicant)
+    if override is not None:
+        risk = override
+    tips = RECS[risk]
+    return {"cluster": cluster, "risk_level": risk, "recommendations": tips}
 
-    # Test with approved = True
-    result = recommend(sample_applicant, approved=True)
-    print(json.dumps(result, indent=2))
+def recommend(features: dict, approved: bool = False) -> dict:
+    return predict_and_recommend(features)
+

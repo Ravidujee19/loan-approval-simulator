@@ -1,37 +1,27 @@
-# Python (backend)
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.egg-info/
+*.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
 .venv/
-venv/
-env/
-ENV/
-*.sqlite3
-
-# React + Vite (frontend)
-node_modules/
-dist/
-.vite/
-vite.config.ts.timestamp-*
-
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Environment files
-*.env
-*.env.*.local
-!*/.env.example   # keep example envs
-
-# IDEs
 .vscode/
-.idea/
+**/__init__.py
 
-# OS
-.DS_Store
-Thumbs.db
+# Node
+loan-ui/node_modules/
+loan-ui/dist/
+loan-ui/.vite/
+*.log
+
+# Dev
+_ae_store/
+
+# Env & local
+# .env
+# example.env
+# agents/applicant_evaluator/app/db/alembic/versions/__pycache__/
+# *.sqlite3

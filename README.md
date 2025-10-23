@@ -1,95 +1,147 @@
-# Loan Approval Simulator – Agents
 
-This project contains two main FastAPI microservices used in the loan approval simulator:
+# Loan Approval Simulator
 
-1. **Applicant Evaluator Agent** – Handles authentication, feature validation, and feature engineering (EMI, DTI, burden, etc.).
-2. **Score Agent** – Provides credit risk scoring, including probability of default and risk bands.
+A **multi-agent system** to simulate automated loan approval decisions.  
+Built with **FastAPI + React (Vite)** + ML models.  
 
 ---
 
-## 📌 Applicant Evaluator Agent
+## 🚀 Overview
 
-FastAPI service that:
+### Agents
+- **Applicant Evaluator** (`agents/applicant_evaluator/`)
+  - Extracts + validates applicant data (form + uploaded docs).
+  - Builds feature vector → calls Score & Recommendation agents.
+  - Persists profiles in `_ae_store/`.
 
-- Authenticates officers (`POST /login`)
-- Validates applicant inputs
-- Engineers features such as:
-  - **EMI** (Equated Monthly Installment)  
-  - **DTI** (Debt-to-Income ratio)  
-  - **Burden metrics**  
+- **Score Agent** (`agents/score_agent/`)
+  - ML model predicts **approval score/outcome**.
+  - Exposed at `/score`.
 
-### 🔧 Run Locally (with venv)
+- **Recommendation Agent** (`agents/recommendation_agent/`)
+  - Generates improvement suggestions.
+  - Exposed at `/api/v1/recommend`.
 
+- **Frontend (loan-ui/)**
+  - Vite + React app for form input & results dashboard.
+
+---
+
+## 🏗️ Architecture
+
+```
+[React Frontend] → [Applicant Evaluator API]
+        |                |
+        |                + -> calls → [Score Agent]
+        |                + -> calls → [Recommendation Agent]
+        |
+        └── Results stored in _ae_store/<applicant_id>/profiles/<loan_id>.json
+```
+
+---
+
+## ⚡ Quickstart 
+
+### 1. Setup environment
 ```bash
-cd agents/applicant_evaluator
+git clone
+cd loan-approval-simulator
 python -m venv .venv
+.venv\Scripts\activate    (Windows)
+source .venv/bin/activate (Linux/Mac)
 
-# Activate virtual environment
-# Windows:
-.venv\Scripts\activate
-# macOS/Linux:
-source .venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Setup environment variables
-cp .env.example .env
-
-# Start server
-uvicorn applicant_evaluator:app --host 0.0.0.0 --port 5001 --reload
 ```
 
----
+### 2. Run services
 
-## 📌 Score Agent
-
-FastAPI service that provides **credit risk scoring**.
-
-### Endpoints
-- `GET /health` → Health check
-- `POST /score` → Returns credit score with details:
-  ```json
-  {
-    "score": 720,
-    "band": "A",
-    "prob_default": 0.02,
-    "factors": ["low DTI", "stable income"],
-    "confidence": 0.93,
-    "model_id": "v1.0"
-  }
-  ```
-
-### 🔧 Run Locally
-
+**Applicant Evaluator (port 8000):**
 ```bash
-cd agents/score_agent
+uvicorn agents.applicant_evaluator.app.main:app --reload --host 0.0.0.0 --port 8000
+```
 
-# Start server
-uvicorn score_agent:app --host 0.0.0.0 --port 5002 --reload
+**Score Agent (port 8001):**
+```bash
+uvicorn agents.score_agent.api:app --reload --host 0.0.0.0 --port 8001
+```
+
+**Recommendation Agent (port 8200):**
+```bash
+uvicorn agents.recommendation_agent.api:app --reload --host 0.0.0.0 --port 8200
+```
+
+**Frontend (port 5173 default):**
+```bash
+cd loan-ui
+npm install
+npm run dev
 ```
 
 ---
 
-## 📂 Project Structure
+## 📊 Demo Flow
 
+1. **Create applicant**
+```bash
+curl -X POST http://localhost:8000/api/v1/ -H "Content-Type: application/json"
 ```
-agents/
-│── applicant_evaluator/    # Feature validation & officer login
-│   ├── applicant_evaluator.py
-│   └── .env.example
-│
-│── score_agent/            # Credit scoring logic
-│   ├── score_agent.py
-|   ├── .env.example
-│   └── models/             # ML models (future expansion)
+
+2. **Upload document**
+```bash
+curl -X POST "http://localhost:8000/api/v1/{applicant_id}/documents"   -F "file=@sample_income.txt"
+```
+
+3. **Evaluate with form**
+```bash
+curl -X POST "http://localhost:8000/api/v1/{applicant_id}/evaluate-with-form"   -H "Content-Type: application/json"   -d '{
+    "loan_id": "123",
+    "income_annum": 9600000,
+    "loan_amount": 29900000,
+    "loan_term": 12,
+    "cibil_score": 778,
+    "education": "Graduate",
+    "self_employed": false
+  }'
+```
+
+4. **Fetch profile**
+```bash
+curl http://localhost:8000/api/v1/{applicant_id}/profile?loan_id=123
 ```
 
 ---
 
-## 🚀 Next Steps
+## ✅ Features Implemented
+- [x] Multi-agent architecture (Evaluator, Score, Recommender).
+- [x] Applicant form + doc upload pipeline.
+- [x] Feature vector building & rules engine.
+- [x] Model-based scoring.
+- [x] Recommendation service.
+- [x] React frontend.
 
-- Containerize both agents using Docker
-- Add authentication/authorization middleware
-- Extend Score Agent to support multiple ML models (ensemble)
-- Integrate with frontend for loan approval workflow
+## 🔜 Planned Next
+- Authentication (JWT).
+- Explainability (feature importance / SHAP).
+- Fairness checks (Responsible AI).
+- LLM-powered extraction & IR (for documents).
+
+---
+
+## 📂 Repo Structure
+```
+loan-approval-simulator/
+│── agents/
+│   ├── applicant_evaluator/
+│   ├── score_agent/
+│   └── recommendation_agent/
+│── loan-ui/                # React frontend
+│── models/                 # ML models 
+│── data/                   # Sample data
+│── requirements.txt
+│── README.md
+```
+
+---
+
+## 🧑‍💻 Authors
+- Team Preditora

@@ -10,7 +10,7 @@ import joblib
 import json
 import numpy as np
 
-df = pd.read_csv("agents/score_agent/model/loan_approval_dataset.csv")
+df = pd.read_csv("data/raw/loan_approval_dataset.csv")
 print("Dataset loaded successfully!")
 print(df.head())
 
@@ -28,7 +28,7 @@ y = df['loan_status'].map({'Approved': 1, 'Rejected': 0})
 print("Missing target values:", y.isnull().sum())
 
 # Features
-X = df.drop('loan_status', axis=1)
+X = df.drop(['loan_status', 'loan_id'], axis=1, errors='ignore')  # drop loan_id if exists
 
 # Drop  ID column if present
 if 'loan_id' in X.columns:
@@ -58,6 +58,14 @@ X_test_processed = preprocessor.transform(X_test)
 
 #Training the MLP Classifier
 
+# Fit preprocessor on training data
+X_train_transformed = preprocessor.fit_transform(X_train)
+X_test_transformed = preprocessor.transform(X_test)
+
+
+
+MLP = MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=500, random_state=42)
+""""
 MLP = MLPClassifier(
     hidden_layer_sizes=(100, 50),  # Two hidden layers
     activation='relu',             # The activation function=rectified linear unit activation function
@@ -69,6 +77,7 @@ MLP = MLPClassifier(
     n_iter_no_change=20,
     verbose=True,
 )
+"""
 
 MLP.fit(X_train_processed, y_train)
 
