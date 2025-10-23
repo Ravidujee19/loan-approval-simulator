@@ -4,6 +4,7 @@ from typing import List, Optional
 from datetime import datetime
 import uuid
 from io import BytesIO
+import json
 
 from ...schemas.applicant_profile import (
     ApplicantProfile,
@@ -20,6 +21,7 @@ from ...services import (
     feature_vector,
     score_client,        # manith
     recommender_client,  # thenura
+    llm_service,
 )
 try:
     import PyPDF2
@@ -133,7 +135,7 @@ async def evaluate_with_form(applicant_id: str, payload: FormPayload, request: R
     # rules checks
     warnings, hard_stops = rules.check(merged)
 
-    # build CSV-aligned features
+    # build features
     feats: Features = feature_builder.to_features(merged)
 
     # quality score
@@ -151,7 +153,7 @@ async def evaluate_with_form(applicant_id: str, payload: FormPayload, request: R
         timestamp=datetime.utcnow().isoformat() + "Z",
     )
 
-    # construct vector in the exact CSV order
+    # construct vector in the exact order
     order = feature_vector.FEATURE_ORDER
     vec = feature_vector.to_vector(feats, order)
 
@@ -180,6 +182,27 @@ async def evaluate_with_form(applicant_id: str, payload: FormPayload, request: R
     # data["vector_order"] = order
 
     storage.save_profile(applicant_id, payload.loan_id, data)
+    
+    
+    # LLM Explanation
+    prompt = f"""
+    You are a financial advisor AI.
+    Given this applicant's full evaluation data:
+    
+    {json.dumps({
+    "features": data.get("features", {}),
+    "inference": data.get("inference", {}),
+    "recommendation": data.get("recommendation", {})
+    }, indent=2)}
+
+    Explain briefly (in 3-5 sentences):
+    - Why the loan was approved or rejected
+    - What factors most influenced the result
+    - 3 personalized improvement tips for the applicant
+    Provide the explanation in a friendly and encouraging tone.
+    """
+    llm_response = llm_service.query_llm(prompt)
+    data["llm_explanation"] = llm_response
     return data
 
 
@@ -192,7 +215,6 @@ def get_profile(applicant_id: str, loan_id: str):
 
 
 # Prefill endpoints
-
 @router.post("/{applicant_id}/prefill-from-text", response_model=dict)
 async def prefill_from_text(applicant_id: str, payload: dict):
     """
@@ -210,7 +232,6 @@ async def prefill_from_text(applicant_id: str, payload: dict):
         raise HTTPException(status_code=400, detail="Provide 'text' or 'texts' in JSON body")
 
     # Call existing extractor. The extractor in other endpoints is called with (docs, raw_texts),
-    # here we don't have storage docs so pass empty docs list and raw_texts list.
     doc_fields, provenance, confidences, extras = nlp.extract_from_texts([], texts)
 
     return {"fields": doc_fields, "provenance": provenance, "confidence": confidences, "extras": extras}
@@ -220,7 +241,7 @@ async def prefill_from_text(applicant_id: str, payload: dict):
 async def prefill_from_pdf(applicant_id: str, file: UploadFile = File(...)):
     """
     Accepts a PDF file upload and returns extracted fields.
-    Tries PyPDF2 text extraction first (digital PDFs), then OCR fallback (pdf2image + pytesseract) if available.
+    Tries PyPDF2 text extraction first (digital PDFs), then OCR fallback (pdf2image + pytesseract).
     """
     contents = await file.read()
     texts = []
@@ -240,10 +261,10 @@ async def prefill_from_pdf(applicant_id: str, file: UploadFile = File(...)):
             if joined_text:
                 texts.append(joined_text)
         except Exception:
-            # PyPDF2 failed -> will attempt OCR if available
+            # PyPDF2 failed -> will attempt OCR
             pass
 
-    # OCR fallback (if pdf2image & pytesseract present) for scanned PDFs
+    # OCR fallback for scanned PDFs
     if not texts and convert_from_bytes is not None and pytesseract is not None:
         try:
             images = convert_from_bytes(contents, dpi=200)
