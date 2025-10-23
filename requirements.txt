@@ -1,18 +1,44 @@
+# Core web framework
 fastapi==0.111.1
 uvicorn[standard]==0.30.3
 pydantic==2.8.2
+pydantic-settings==2.4.0
 python-multipart==0.0.9
 requests==2.32.3
-pydantic-settings==2.4.0
+
+# Data science stack
 pandas==2.2.2
+numpy==1.26.4
 scikit-learn==1.7.1
 joblib==1.3.2
 
-PyPDF2>=3.0.0        # text extraction from non-scanned PDFs
-pdf2image>=1.16.0    # convert PDF pages to images for OCR (optional fallback)
-pillow               # image support for pdf2image
-pytesseract          # OCR fallback for scanned PDFs (requires tesseract installed on host OS)
+# PDF & OCR tools
+PyPDF2>=3.0.0
+pdf2image>=1.16.0
+pillow>=10.0.0
+pytesseract>=0.3.13
 
-numpy==1.26.4
+# NLP for text cleaning
 spacy==3.7.5
 en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
+
+# LLM Layer & Hugging Face inference
+huggingface_hub[inference]>=0.13.0
+# ollama==0.2.1 # remove this if want both gemini and ollama
+ollama==0.3.0
+langchain-core==0.3.6 ##
+google-generativeai>=0.3.3 ##
+
+# Storage / S3-compatible
+boto3>=1.28.0 ##
+minio>=7.1.0 ##
+
+# Utilities & testing
+python-multipart==0.0.9
+python-magic>=0.4.27
+pytest>=7.4.0
+
+# Optional: image/pdf helpers for server builds
+wand>=0.6.11 ##
+google-genai
+python-dotenv
