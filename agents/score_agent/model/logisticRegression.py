@@ -131,9 +131,11 @@ for key, value in metrics.items():
 joblib.dump(LReg, "agents/score_agent/model/model_info/logisticRegression_info/logisticRegression.pkl")
 
 # To save the preprocessor
-joblib.dump(preprocessor, "agents/score_agent/logisticRegression_preprocessor.pkl")
+joblib.dump(preprocessor, "agents/score_agent/model/model_info/logisticRegression_info/logisticRegression_preprocessor.pkl")
 
-with open("agents/score_agent/logisticRegression_metrics.json", "w") as f:
+#save the metrics
+
+with open("agents/score_agent/model/model_info/logisticRegression_info/logisticRegression_metrics.json", "w") as f:
     json.dump(metrics, f, indent=4)
 
 

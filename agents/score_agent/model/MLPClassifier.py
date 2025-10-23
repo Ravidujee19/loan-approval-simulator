@@ -101,13 +101,13 @@ for key, value in metrics.items():
     print(f"{key}: {value}")
 
 # Save MLP model and preprocessor
-joblib.dump(MLP, "agents/score_agent/mlpClassifier.pkl")
-joblib.dump(preprocessor, "agents/score_agent/mlpClassifier_preprocessor.pkl")
+joblib.dump(MLP, "agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier.pkl")
+joblib.dump(preprocessor, "agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier_preprocessor.pkl")
 
 
 
 # Save metrics to JSON file
-with open("agents/score_agent/mlpClassifier_metrics.json", "w") as f:
+with open("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier_metrics.json", "w") as f:
     json.dump(metrics, f, indent=4)
 
 
@@ -122,7 +122,7 @@ approved_sample = X_train_processed[np.random.choice(approved_idx, n_samples_per
 rejected_sample = X_train_processed[np.random.choice(rejected_idx, n_samples_per_class, replace=False)]
 
 background = np.vstack([approved_sample, rejected_sample])
-joblib.dump(background, "agents/score_agent/mlpClassifier_background.pkl")
+joblib.dump(background, "agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier_background.pkl")
 print("\nSHAP background saved successfully!")
 
 

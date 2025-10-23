@@ -12,15 +12,15 @@ app = FastAPI()
 ###Creating a dictionary with all models info
 models_info = {
     "logisticRegression": {
-        "model": joblib.load("agents/score_agent/logisticRegression.pkl"),
-        "preprocessor": joblib.load("agents/score_agent/logisticRegression_preprocessor.pkl"),
-        "metrics": json.load(open("agents/score_agent/logisticRegression_metrics.json"))
+        "model": joblib.load("agents/score_agent/model/model_info/logisticRegression_info/logisticRegression.pkl"),
+        "preprocessor": joblib.load("agents/score_agent/model/model_info/logisticRegression_info/logisticRegression_preprocessor.pkl"),
+        "metrics": json.load(open("agents/score_agent/model/model_info/logisticRegression_info/logisticRegression_metrics.json"))
     },
     "mlpClassifier": {
-        "model": joblib.load("agents/score_agent/mlpClassifier.pkl"),
-        "preprocessor": joblib.load("agents/score_agent/mlpClassifier_preprocessor.pkl"), 
-        "metrics": json.load(open("agents/score_agent/mlpClassifier_metrics.json")),
-        "background": joblib.load("agents/score_agent/mlpClassifier_background.pkl")
+        "model": joblib.load("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier.pkl"),
+        "preprocessor": joblib.load("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier_preprocessor.pkl"), 
+        "metrics": json.load(open("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier_metrics.json")),
+        "background": joblib.load("agents/score_agent/model/model_info/mlpClassifier_info/mlpClassifier_background.pkl")
     }
     ##Add thenura's model
 }
