@@ -1,11 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Dict, List, Literal, Optional
 
-# CSV columns:
-# loan_id,no_of_dependents,education,self_employed,income_annum,loan_amount,loan_term,
-# cibil_score,residential_assets_value,commercial_assets_value,luxury_assets_value,
-# bank_asset_value,
-
 Education = Literal["Graduate","Not Graduate"]
 
 class Features(BaseModel):
