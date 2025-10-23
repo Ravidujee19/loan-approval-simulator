@@ -1,11 +1,17 @@
 # This code is use forn testing purposes only
 
-# from services import rules, feature_builder, feature_vector
+# from services import rules, feature_builder, feature_vector, extractor
 from agents.applicant_evaluator.app.services import rules, feature_builder, feature_vector, extractor
 
 text = "Ravi has 2 dependents, is a Graduate, self-employed, earns 8 lakhs per year and wants a 20 lakhs loan for 20 years with CIBIL score 750."
 
 
+from agents.applicant_evaluator.app.services.llm_client import call_llm_hf
+
+prompt = "Return a JSON object: {\"test_key\": \"hello world\"}"
+ok, resp = call_llm_hf(prompt)
+print("OK:", ok)
+print("RESP:", resp)
 
 
 # Sample applicant data
