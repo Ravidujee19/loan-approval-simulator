@@ -2,30 +2,21 @@
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
-# for mac
-python3 -m venv .venv
-source .venv/bin/activate
-
-# install
 pip install -r requirements.txt
 
-pip install -r requirements_mac.txt
 
+# Testing LLM
+ollama run llama3 "Hello from Windows" (This will get all the necessary dependency)
+Invoke-RestMethod -Uri http://localhost:11434/api/version   # test the local API
 
-.\.venv\Scripts\Activate.ps1
+# Testing Local LLM for Gemini
+# from project root
+python agents/recommendation_agent/llm_decision.py
 
 # run agents from the repo root (have to give the path)
 python -m uvicorn agents.applicant_evaluator.app.main:app --reload --host 0.0.0.0 --port 8000
 python -m uvicorn agents.score_agent.score_agent:app --reload --host 0.0.0.0 --port 8001
 python -m uvicorn agents.recommendation_agent.api:app --reload --host 0.0.0.0 --port 8200
-
-# for mac
-python3 -m uvicorn agents.applicant_evaluator.app.main:app --reload --host 0.0.0.0 --port 8000
-uvicorn agents.score_agent.score_agent:app --reload
-
-
-# from repo root
-pip install -r requirements.txt
 
 # for frontend
 inside the loan-approval-simulator\loan-ui
