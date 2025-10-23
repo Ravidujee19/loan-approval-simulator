@@ -8,6 +8,7 @@ from sklearn.metrics import (
 )
 import joblib
 import json
+import numpy as np
 
 df = pd.read_csv("agents/score_agent/model/loan_approval_dataset.csv")
 print("Dataset loaded successfully!")
@@ -102,7 +103,22 @@ with open("agents/score_agent/mlpClassifier_metrics.json", "w") as f:
 
 
 
-print("\nModel, preprocessor, columns, and metrics saved successfully!")
+
+#Shap background
+approved_idx = np.where(y_train == 1)[0]
+rejected_idx = np.where(y_train == 0)[0]
+
+n_samples_per_class = 75 # 150 total
+approved_sample = X_train_processed[np.random.choice(approved_idx, n_samples_per_class, replace=False)]
+rejected_sample = X_train_processed[np.random.choice(rejected_idx, n_samples_per_class, replace=False)]
+
+background = np.vstack([approved_sample, rejected_sample])
+joblib.dump(background, "agents/score_agent/mlpClassifier_background.pkl")
+print("\nSHAP background saved successfully!")
+
+
+
+print("\nModel, preprocessor, columns, and metrics and SHAP background saved successfully!")
 
 
 
