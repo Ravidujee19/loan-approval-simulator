@@ -21,7 +21,6 @@ loan-ui/.vite/
 _ae_store/
 
 # Env & local
-# .env
-# example.env
-# agents/applicant_evaluator/app/db/alembic/versions/__pycache__/
-# *.sqlite3
+.env
+example.env
+
