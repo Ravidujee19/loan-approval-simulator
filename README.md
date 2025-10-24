@@ -79,35 +79,9 @@ npm run dev
 
 ---
 
-## 📊 Demo Flow
 
-1. **Create applicant**
-```bash
-curl -X POST http://localhost:8000/api/v1/ -H "Content-Type: application/json"
-```
 
-2. **Upload document**
-```bash
-curl -X POST "http://localhost:8000/api/v1/{applicant_id}/documents"   -F "file=@sample_income.txt"
-```
 
-3. **Evaluate with form**
-```bash
-curl -X POST "http://localhost:8000/api/v1/{applicant_id}/evaluate-with-form"   -H "Content-Type: application/json"   -d '{
-    "loan_id": "123",
-    "income_annum": 9600000,
-    "loan_amount": 29900000,
-    "loan_term": 12,
-    "cibil_score": 778,
-    "education": "Graduate",
-    "self_employed": false
-  }'
-```
-
-4. **Fetch profile**
-```bash
-curl http://localhost:8000/api/v1/{applicant_id}/profile?loan_id=123
-```
 
 ---
 
@@ -118,12 +92,9 @@ curl http://localhost:8000/api/v1/{applicant_id}/profile?loan_id=123
 - [x] Model-based scoring.
 - [x] Recommendation service.
 - [x] React frontend.
-
-## 🔜 Planned Next
-- Authentication (JWT).
-- Explainability (feature importance / SHAP).
-- Fairness checks (Responsible AI).
-- LLM-powered extraction & IR (for documents).
+- [x] Explainability (feature importance / SHAP).
+- [x] Fairness checks (Responsible AI).
+- [x] LLM-powered extraction & IR (for documents).
 
 ---
 
