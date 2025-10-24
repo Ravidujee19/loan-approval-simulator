@@ -29,7 +29,11 @@ export default function App() {
   const [result, setResult] = useState(null);
 
   // meta returned by prefill: confidences & provenance
-  const [prefillMeta, setPrefillMeta] = useState({ confidence: {}, provenance: {}, fields: {} });
+  const [prefillMeta, setPrefillMeta] = useState({
+    confidence: {},
+    provenance: {},
+    fields: {},
+  });
   const [log, setLog] = useState("");
 
   useEffect(() => {
@@ -60,7 +64,7 @@ export default function App() {
   };
 
   const handleUpload = async () => {
-    if (!files?.length) return;
+    if (!files?.length || !applicantId) return;
     setBusy(true);
     try {
       await uploadDocs(applicantId, files);
@@ -131,7 +135,7 @@ export default function App() {
     }
   };
 
-  // merge text + PDF prefill with confidence 
+  // merge text + PDF prefill with confidence
   const applyPrefillResult = (res) => {
     if (!res) return;
     const fields = res.fields || {};
@@ -186,12 +190,22 @@ export default function App() {
     return (
       <div style={{ display: "inline-block", marginLeft: 8 }}>
         {conf != null && (
-          <span className="small-badge" title={`Auto extracted (confidence ${(conf * 100).toFixed(0)}%)`}>
+          <span
+            className="small-badge"
+            title={`Auto extracted (confidence ${(conf * 100).toFixed(0)}%)`}
+          >
             auto {(conf * 100).toFixed(0)}%
           </span>
         )}
         {prov?.snippet && (
-          <span className="prov" title={prov.snippet.length > 200 ? prov.snippet.slice(0, 200) + "…" : prov.snippet}>
+          <span
+            className="prov"
+            title={
+              prov.snippet.length > 200
+                ? prov.snippet.slice(0, 200) + "…"
+                : prov.snippet
+            }
+          >
             ⓘ
           </span>
         )}
@@ -204,16 +218,17 @@ export default function App() {
       <div className="card">
         <h1>Loan Approval Simulator</h1>
 
-        <div style={{ marginBottom: 10 }}>
-          <span className="badge">
-            {applicantId ? `Applicant: ${applicantId.slice(0, 8)}…` : "Creating…"}
-          </span>
-        </div>
+        {/* Removed Applicant/Loan ID display as requested */}
 
         <h2>Auto Prefill</h2>
         <div className="auto-prefill">
           <div style={{ marginBottom: 8 }}>
-            <textarea id="prefillText" placeholder="Paste raw text here (application, payslip, bank statement...)" rows={5} style={{ width: "100%" }} />
+            <textarea
+              id="prefillText"
+              placeholder="Paste raw text here (application, payslip, bank statement...)"
+              rows={5}
+              style={{ width: "100%" }}
+            />
             <div style={{ marginTop: 6 }}>
               <button
                 onClick={() => {
@@ -249,18 +264,29 @@ export default function App() {
 
         <h2>Enter Your Details</h2>
         <div className="row">
+          {/* loan_id kept in state but not displayed in result */}
           <div>
             <label>Loan ID</label>
             <input name="loan_id" value={form.loan_id} onChange={onChange} />
           </div>
 
           <div>
-            <label>No. of Dependents <FieldMeta name="no_of_dependents" /></label>
-            <input name="no_of_dependents" type="number" min="0" value={form.no_of_dependents} onChange={onChange} />
+            <label>
+              No. of Dependents <FieldMeta name="no_of_dependents" />
+            </label>
+            <input
+              name="no_of_dependents"
+              type="number"
+              min="0"
+              value={form.no_of_dependents}
+              onChange={onChange}
+            />
           </div>
 
           <div>
-            <label>Education <FieldMeta name="education" /></label>
+            <label>
+              Education <FieldMeta name="education" />
+            </label>
             <select name="education" value={form.education} onChange={onChange}>
               <option value="Graduate">Graduate</option>
               <option value="Not Graduate">Not Graduate</option>
@@ -268,51 +294,123 @@ export default function App() {
           </div>
 
           <div>
-            <label>Self Employed <FieldMeta name="self_employed" /></label>
-            <select name="self_employed" value={form.self_employed} onChange={onChange}>
+            <label>
+              Self Employed <FieldMeta name="self_employed" />
+            </label>
+            <select
+              name="self_employed"
+              value={form.self_employed}
+              onChange={onChange}
+            >
               <option value="No">No</option>
               <option value="Yes">Yes</option>
             </select>
           </div>
 
           <div>
-            <label>Annual Income (LKR) <FieldMeta name="income_annum" /></label>
-            <input name="income_annum" type="number" min="0" value={form.income_annum} onChange={onChange} />
+            <label>
+              Annual Income (LKR) <FieldMeta name="income_annum" />
+            </label>
+            <input
+              name="income_annum"
+              type="number"
+              min="0"
+              value={form.income_annum}
+              onChange={onChange}
+            />
           </div>
 
           <div>
-            <label>Requested Loan Amount (LKR) <FieldMeta name="loan_amount" /></label>
-            <input name="loan_amount" type="number" min="0" value={form.loan_amount} onChange={onChange} />
+            <label>
+              Requested Loan Amount (LKR) <FieldMeta name="loan_amount" />
+            </label>
+            <input
+              name="loan_amount"
+              type="number"
+              min="0"
+              value={form.loan_amount}
+              onChange={onChange}
+            />
           </div>
 
           <div>
-            <label>Loan Term (years) <FieldMeta name="loan_term" /></label>
-            <input name="loan_term" type="number" min="2" max="20" value={form.loan_term} onChange={onChange} />
+            <label>
+              Loan Term (years) <FieldMeta name="loan_term" />
+            </label>
+            <input
+              name="loan_term"
+              type="number"
+              min="2"
+              max="20"
+              value={form.loan_term}
+              onChange={onChange}
+            />
           </div>
 
           <div>
-            <label>CIBIL Score <FieldMeta name="cibil_score" /></label>
-            <input name="cibil_score" type="number" min="300" max="900" value={form.cibil_score} onChange={onChange} />
+            <label>
+              CIBIL Score <FieldMeta name="cibil_score" />
+            </label>
+            <input
+              name="cibil_score"
+              type="number"
+              min="300"
+              max="900"
+              value={form.cibil_score}
+              onChange={onChange}
+            />
           </div>
 
           <div>
-            <label>Residential Assets <FieldMeta name="residential_assets_value" /></label>
-            <input name="residential_assets_value" type="number" min="0" value={form.residential_assets_value} onChange={onChange} />
+            <label>
+              Residential Assets <FieldMeta name="residential_assets_value" />
+            </label>
+            <input
+              name="residential_assets_value"
+              type="number"
+              min="0"
+              value={form.residential_assets_value}
+              onChange={onChange}
+            />
           </div>
 
           <div>
-            <label>Commercial Assets <FieldMeta name="commercial_assets_value" /></label>
-            <input name="commercial_assets_value" type="number" min="0" value={form.commercial_assets_value} onChange={onChange} />
+            <label>
+              Commercial Assets <FieldMeta name="commercial_assets_value" />
+            </label>
+            <input
+              name="commercial_assets_value"
+              type="number"
+              min="0"
+              value={form.commercial_assets_value}
+              onChange={onChange}
+            />
           </div>
 
           <div>
-            <label>Luxury Assets <FieldMeta name="luxury_assets_value" /></label>
-            <input name="luxury_assets_value" type="number" min="0" value={form.luxury_assets_value} onChange={onChange} />
+            <label>
+              Luxury Assets <FieldMeta name="luxury_assets_value" />
+            </label>
+            <input
+              name="luxury_assets_value"
+              type="number"
+              min="0"
+              value={form.luxury_assets_value}
+              onChange={onChange}
+            />
           </div>
 
           <div>
-            <label>Bank Assets <FieldMeta name="bank_asset_value" /></label>
-            <input name="bank_asset_value" type="number" min="0" value={form.bank_asset_value} onChange={onChange} />
+            <label>
+              Bank Assets <FieldMeta name="bank_asset_value" />
+            </label>
+            <input
+              name="bank_asset_value"
+              type="number"
+              min="0"
+              value={form.bank_asset_value}
+              onChange={onChange}
+            />
           </div>
         </div>
 
@@ -320,22 +418,172 @@ export default function App() {
           <button disabled={!canSubmit} onClick={handleEvaluate}>
             Evaluate
           </button>
+
+          {/* Optional: document upload control (kept functional) */}
+          <div style={{ marginLeft: 12 }}>
+            <input
+              type="file"
+              multiple
+              onChange={(e) => setFiles(Array.from(e.target.files || []))}
+              disabled={!applicantId || busy}
+            />
+            <button onClick={handleUpload} disabled={!files.length || !applicantId || busy}>
+              Upload Docs
+            </button>
+          </div>
         </div>
       </div>
 
-      {result && (
-        <div className="card" style={{ marginTop: 16 }}>
-          <h2>Result</h2>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 8 }}>
-            <span className={`badge ${result?.consistency?.hard_stops?.length ? "stop" : "ok"}`}>
-              {result?.consistency?.hard_stops?.length ? "Hard stops present" : "No hard stops"}
-            </span>
-          </div>
-          <pre>{JSON.stringify(result, null, 2)}</pre>
-        </div>
+      {result && <ResultTabs result={result} formSnapshot={form} />}
+    </div>
+  );
+}
+
+/* ===================== Result Views ===================== */
+
+function ResultTabs({ result, formSnapshot }) {
+  const [tab, setTab] = useState("summary"); // "summary" | "llm"
+
+  return (
+    <div className="card" style={{ marginTop: 16 }}>
+      <div className="tabs">
+        <button
+          className={`tab ${tab === "summary" ? "active" : ""}`}
+          onClick={() => setTab("summary")}
+        >
+          Summary
+        </button>
+        <button
+          className={`tab ${tab === "llm" ? "active" : ""}`}
+          onClick={() => setTab("llm")}
+        >
+          LLM Explanation
+        </button>
+      </div>
+
+      {tab === "summary" ? (
+        <SummaryPage result={result} formSnapshot={formSnapshot} />
+      ) : (
+        <LLMPage result={result} />
       )}
     </div>
   );
 }
 
-//
+function SummaryPage({ result, formSnapshot }) {
+  // Whitelist of “feature” fields to show (from your form/backend top-level)
+  const FEATURE_KEYS = [
+    "no_of_dependents",
+    "education",
+    "self_employed",
+    "income_annum",
+    "loan_amount",
+    "loan_term",
+    "cibil_score",
+    "residential_assets_value",
+    "commercial_assets_value",
+    "luxury_assets_value",
+    "bank_asset_value",
+  ];
+
+  // Prefer values returned in result; fall back to the form snapshot
+  const features = FEATURE_KEYS.map((k) => ({
+    key: k,
+    value:
+      result?.[k] !== undefined && result?.[k] !== null
+        ? result[k]
+        : formSnapshot?.[k],
+  }));
+
+  // Recommendation payload (hide cluster)
+  const reco = result?.recommendation || {};
+  const risk = reco?.risk_level ?? "—";
+  const actions = Array.isArray(reco?.recommendations) ? reco.recommendations : [];
+
+  return (
+    <div>
+      <h2>Based on your details, here's how we currently assess your loan request and what you should do next.
+</h2>
+
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+        <Badge tone={riskTone(risk)}>{`Risk Level: ${risk}`}</Badge>
+      </div>
+
+      <section style={{ marginBottom: 16 }}>
+        <h3>Your Informations</h3>
+        <div className="grid-table">
+          {features.map(({ key, value }) => (
+            <div key={key} className="row">
+              <div className="cell label">{labelize(key)}</div>
+              <div className="cell value">{formatValue(key, value)}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h3>Recommendations</h3>
+        {actions.length ? (
+          <ul className="reco-list">
+            {actions.map((r, i) => (
+              <li key={i}>{r}</li>
+            ))}
+          </ul>
+        ) : (
+          <em>No recommendations provided.</em>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function LLMPage({ result }) {
+  const text = result?.llm_explanation;
+  return (
+    <div>
+      <h2>Here’s a detailed explanation of the factors that influenced your loan decision.
+</h2>
+      {text ? <div className="llm-box">{text}</div> : <em>No LLM explanation available.</em>}
+    </div>
+  );
+}
+
+/* ---------- Small UI atoms & helpers ---------- */
+
+function Badge({ children, tone = "neutral" }) {
+  return <span className={`badge tone-${tone}`}>{children}</span>;
+}
+
+function riskTone(risk) {
+  const r = String(risk || "").toLowerCase();
+  if (r.includes("high")) return "danger";
+  if (r.includes("medium")) return "warn";
+  if (r.includes("low")) return "ok";
+  return "neutral";
+}
+
+function labelize(key) {
+  // turn snake_case into "Title Case"
+  return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatValue(key, v) {
+  if (v === null || v === undefined || v === "") return "—";
+  // currency-ish numbers
+  const moneyKeys = [
+    "income_annum",
+    "loan_amount",
+    "residential_assets_value",
+    "commercial_assets_value",
+    "luxury_assets_value",
+    "bank_asset_value",
+  ];
+  if (moneyKeys.includes(key) && !isNaN(Number(v))) {
+    return `LKR ${Number(v).toLocaleString()}`;
+  }
+  // generic number (except CIBIL which we keep raw range 300–900)
+  if (!isNaN(Number(v)) && key !== "cibil_score") {
+    return Number(v).toLocaleString();
+  }
+  return String(v);
+}
