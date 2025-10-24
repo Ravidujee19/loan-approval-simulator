@@ -6,6 +6,9 @@ pydantic-settings==2.4.0
 python-multipart==0.0.9
 requests==2.32.3
 
+# Authentication
+PyJWT==2.9.0
+
 # Data science stack
 pandas==2.2.2
 numpy==1.26.4
@@ -26,19 +29,18 @@ en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_
 huggingface_hub[inference]>=0.13.0
 # ollama==0.2.1 # remove this if want both gemini and ollama
 ollama==0.3.0
-langchain-core==0.3.6 ##
-google-generativeai>=0.3.3 ##
+langchain-core==0.3.6
+google-generativeai>=0.3.3
 
 # Storage / S3-compatible
-boto3>=1.28.0 ##
-minio>=7.1.0 ##
+boto3>=1.28.0
+minio>=7.1.0
 
 # Utilities & testing
-python-multipart==0.0.9
 python-magic>=0.4.27
 pytest>=7.4.0
 
 # Optional: image/pdf helpers for server builds
-wand>=0.6.11 ##
+wand>=0.6.11
 google-genai
 python-dotenv
