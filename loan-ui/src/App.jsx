@@ -57,7 +57,12 @@ export default function App() {
         delete newConf[name];
         const newProv = { ...m.provenance };
         delete newProv[name];
-        return { ...m, fields: newFields, confidence: newConf, provenance: newProv };
+        return {
+          ...m,
+          fields: newFields,
+          confidence: newConf,
+          provenance: newProv,
+        };
       }
       return m;
     });
@@ -178,7 +183,11 @@ export default function App() {
         }
       }
 
-      return { confidence: mergedConf, provenance: mergedProv, fields: mergedFields };
+      return {
+        confidence: mergedConf,
+        provenance: mergedProv,
+        fields: mergedFields,
+      };
     });
   };
 
@@ -264,11 +273,7 @@ export default function App() {
 
         <h2>Enter Your Details</h2>
         <div className="row">
-          {/* loan_id kept in state but not displayed in result */}
-          <div>
-            <label>Loan ID</label>
-            <input name="loan_id" value={form.loan_id} onChange={onChange} />
-          </div>
+          {/* loan_id stays in state (not shown in result) */}
 
           <div>
             <label>
@@ -419,20 +424,25 @@ export default function App() {
             Evaluate
           </button>
 
-          {/* Optional: document upload control (kept functional) */}
-          <div style={{ marginLeft: 12 }}>
+          {/* <div style={{ marginLeft: 12 }}>
             <input
               type="file"
               multiple
               onChange={(e) => setFiles(Array.from(e.target.files || []))}
               disabled={!applicantId || busy}
             />
-            <button onClick={handleUpload} disabled={!files.length || !applicantId || busy}>
-              Upload Docs
-            </button>
-          </div>
+           
+          </div> */}
         </div>
       </div>
+      
+      {busy && (
+  <div className="thinking-box">
+    <div className="spinner"></div>
+    <p>🤔 Thinking... analyzing your loan request</p>
+  </div>
+)}
+
 
       {result && <ResultTabs result={result} formSnapshot={form} />}
     </div>
@@ -442,7 +452,8 @@ export default function App() {
 /* ===================== Result Views ===================== */
 
 function ResultTabs({ result, formSnapshot }) {
-  const [tab, setTab] = useState("summary"); // "summary" | "llm"
+  // tabs: summary, explanation, impact
+  const [tab, setTab] = useState("summary"); // "summary" | "llm" | "impact"
 
   return (
     <div className="card" style={{ marginTop: 16 }}>
@@ -457,21 +468,31 @@ function ResultTabs({ result, formSnapshot }) {
           className={`tab ${tab === "llm" ? "active" : ""}`}
           onClick={() => setTab("llm")}
         >
-          LLM Explanation
+          Explanation
+        </button>
+        <button
+          className={`tab ${tab === "impact" ? "active" : ""}`}
+          onClick={() => setTab("impact")}
+        >
+          Impact
         </button>
       </div>
 
       {tab === "summary" ? (
         <SummaryPage result={result} formSnapshot={formSnapshot} />
-      ) : (
+      ) : tab === "llm" ? (
         <LLMPage result={result} />
+      ) : (
+        <ShapPage result={result} />
       )}
     </div>
   );
 }
 
+/* ---------------- Summary Page ---------------- */
+
 function SummaryPage({ result, formSnapshot }) {
-  // Whitelist of “feature” fields to show (from your form/backend top-level)
+  // Which fields to show
   const FEATURE_KEYS = [
     "no_of_dependents",
     "education",
@@ -486,7 +507,7 @@ function SummaryPage({ result, formSnapshot }) {
     "bank_asset_value",
   ];
 
-  // Prefer values returned in result; fall back to the form snapshot
+  // Prefer backend value, otherwise use form value
   const features = FEATURE_KEYS.map((k) => ({
     key: k,
     value:
@@ -495,32 +516,124 @@ function SummaryPage({ result, formSnapshot }) {
         : formSnapshot?.[k],
   }));
 
-  // Recommendation payload (hide cluster)
+  // Recommendation info
   const reco = result?.recommendation || {};
   const risk = reco?.risk_level ?? "—";
-  const actions = Array.isArray(reco?.recommendations) ? reco.recommendations : [];
+  const actions = Array.isArray(reco?.recommendations)
+    ? reco.recommendations
+    : [];
+
+  // Decision + score from model (handle both nesting styles)
+  const prediction =
+    result?.inference?.prediction ?? result?.prediction ?? null;
+  const scoreOutOf100 =
+    result?.inference?.score ?? result?.score ?? null;
 
   return (
     <div>
-      <h2>Based on your details, here's how we currently assess your loan request and what you should do next.
-</h2>
+      <h2>
+        Based on your details, here's how we currently assess your loan request
+        and what you should do next.
+      </h2>
 
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+      {/* Top badges: risk and approval decision */}
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          flexWrap: "wrap",
+          marginBottom: 16,
+        }}
+      >
         <Badge tone={riskTone(risk)}>{`Risk Level: ${risk}`}</Badge>
+        <DecisionPill prediction={prediction} />
       </div>
 
-      <section style={{ marginBottom: 16 }}>
-        <h3>Your Informations</h3>
-        <div className="grid-table">
-          {features.map(({ key, value }) => (
-            <div key={key} className="row">
-              <div className="cell label">{labelize(key)}</div>
-              <div className="cell value">{formatValue(key, value)}</div>
+      {/* Info + side status card */}
+      <section style={{ marginBottom: 20 }}>
+        <h3>Your Information</h3>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0,1fr) 220px",
+            gap: "16px",
+            alignItems: "start",
+          }}
+        >
+          {/* left column: table of applicant features */}
+          <div className="grid-table">
+            {features.map(({ key, value }) => (
+              <div key={key} className="row">
+                <div className="cell label">{labelize(key)}</div>
+                <div className="cell value">{formatValue(key, value)}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* right column: decision / score card */}
+          <div
+            style={{
+              background: "rgba(15,23,42,0.6)",
+              border: "1px solid rgba(148,163,184,0.4)",
+              borderRadius: "14px",
+              padding: "16px",
+              boxShadow:
+                "0 24px 60px rgba(0,0,0,0.9),0 0 30px rgba(56,189,248,0.3),0 0 80px rgba(99,102,241,0.3)",
+              minHeight: "140px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+            }}
+          >
+            <div style={{ marginBottom: "12px" }}>
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  fontWeight: 500,
+                  color: "#94a3b8",
+                  marginBottom: "4px",
+                  textShadow:
+                    "0 0 8px rgba(16,185,129,0.4), 0 0 24px rgba(99,102,241,0.4)",
+                }}
+              >
+                Decision
+              </div>
+              <DecisionPill prediction={prediction} />
             </div>
-          ))}
+
+            <div>
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  fontWeight: 500,
+                  color: "#94a3b8",
+                  marginBottom: "4px",
+                  textShadow:
+                    "0 0 8px rgba(56,189,248,0.4), 0 0 24px rgba(99,102,241,0.4)",
+                }}
+              >
+                Confidence Score
+              </div>
+              <div
+                style={{
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  color: "#fff",
+                  textShadow:
+                    "0 0 10px rgba(255,255,255,0.6), 0 0 30px rgba(16,185,129,0.6), 0 0 60px rgba(99,102,241,0.4)",
+                }}
+              >
+                {scoreOutOf100 != null
+                  ? `${Number(scoreOutOf100).toFixed(2)} / 100`
+                  : "—"}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
+      {/* Recommendations */}
       <section>
         <h3>Recommendations</h3>
         {actions.length ? (
@@ -537,14 +650,178 @@ function SummaryPage({ result, formSnapshot }) {
   );
 }
 
+/* ---------------- Explanation Page ---------------- */
+
 function LLMPage({ result }) {
   const text = result?.llm_explanation;
   return (
     <div>
-      <h2>Here’s a detailed explanation of the factors that influenced your loan decision.
-</h2>
-      {text ? <div className="llm-box">{text}</div> : <em>No LLM explanation available.</em>}
+      <h2>
+        Here’s a detailed explanation of the factors that influenced your loan
+        decision.
+      </h2>
+      {text ? (
+        <div className="llm-box">{text}</div>
+      ) : (
+        <em>No explanation available.</em>
+      )}
     </div>
+  );
+}
+
+/* ---------------- Impact / SHAP Page ---------------- */
+
+function ShapPage({ result }) {
+  // We try inference.shap_values first; fallback to shap_values at root.
+  const shapObj =
+    result?.inference?.shap_values ||
+    result?.shap_values ||
+    {};
+
+  // convert dict {feature: value} -> sorted array
+  const shapData = Object.entries(shapObj)
+    .map(([feature, value]) => ({
+      feature,
+      value: Number(value || 0),
+    }))
+    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+    .slice(0, 8); // show top 8
+
+  return (
+    <div>
+      <h2>
+        These factors had the biggest positive or negative impact on your loan
+        assessment.
+      </h2>
+
+      {shapData.length === 0 ? (
+        <em>No impact data available.</em>
+      ) : (
+        <div style={{ marginTop: 16 }}>
+          <ShapBarChart data={shapData} />
+          <div
+            style={{
+              fontSize: "0.8rem",
+              color: "#9ca3af",
+              marginTop: 8,
+            }}
+          >
+            Green bars helped approval. Red bars made approval harder.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* SVG SHAP chart */
+function ShapBarChart({ data }) {
+  // Layout
+  const width = 600;
+  const barHeight = 28;
+  const gap = 8;
+  const leftCol = 200; // left label column
+  const chartWidth = width - leftCol;
+
+  // max |value| for scaling
+  const maxMag = Math.max(
+    ...data.map((d) => Math.abs(d.value)),
+    1 // avoid div by zero
+  );
+
+  return (
+    <svg
+      width="100%"
+      viewBox={`0 0 ${width} ${data.length * (barHeight + gap)}`}
+      style={{
+        maxWidth: "100%",
+        borderRadius: "12px",
+        background: "rgba(15,23,42,0.6)",
+        border: "1px solid rgba(148,163,184,0.4)",
+        boxShadow:
+          "0 24px 60px rgba(0,0,0,0.9),0 0 30px rgba(56,189,248,0.3),0 0 80px rgba(99,102,241,0.3)",
+      }}
+    >
+      <defs>
+        <linearGradient id="gradPos" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="rgb(16,185,129)" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="rgb(16,185,129)" stopOpacity="0.9" />
+        </linearGradient>
+        <linearGradient id="gradNeg" x1="100%" y1="0%" x2="0%" y2="0%">
+          <stop offset="0%" stopColor="rgb(239,68,68)" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="rgb(239,68,68)" stopOpacity="0.9" />
+        </linearGradient>
+      </defs>
+
+      {data.map((d, i) => {
+        const y = i * (barHeight + gap);
+
+        const frac = Math.abs(d.value) / maxMag;
+        const halfWidth = chartWidth / 2;
+        const barLen = frac * halfWidth;
+
+        // middle (0 impact) line
+        const originX = leftCol + halfWidth;
+
+        const isPositive = d.value >= 0;
+        const rectX = isPositive ? originX : originX - barLen;
+        const rectW = barLen;
+        const fillGrad = isPositive ? "url(#gradPos)" : "url(#gradNeg)";
+
+        return (
+          <g key={d.feature}>
+            {/* Feature name on the left */}
+            <text
+              x={12}
+              y={y + barHeight * 0.7}
+              fill="#fff"
+              fontSize="12"
+              style={{ fontFamily: "Inter, system-ui, sans-serif" }}
+            >
+              {labelize(d.feature)}
+            </text>
+
+            {/* Center line */}
+            <line
+              x1={originX}
+              y1={y}
+              x2={originX}
+              y2={y + barHeight}
+              stroke="rgba(255,255,255,0.2)"
+              strokeWidth="1"
+            />
+
+            {/* Impact bar */}
+            <rect
+              x={rectX}
+              y={y}
+              width={rectW}
+              height={barHeight}
+              rx={6}
+              fill={fillGrad}
+              stroke="rgba(255,255,255,0.2)"
+              strokeWidth="1"
+            />
+
+            {/* Value label */}
+            <text
+              x={isPositive ? rectX + rectW + 6 : rectX - 6}
+              y={y + barHeight * 0.7}
+              fill="#f8fafc"
+              fontSize="12"
+              textAnchor={isPositive ? "start" : "end"}
+              style={{
+                fontFamily: "Inter, system-ui, sans-serif",
+                textShadow:
+                  "0 0 8px rgba(255,255,255,0.6),0 0 24px rgba(16,185,129,0.6)",
+              }}
+            >
+              {d.value.toFixed(2)}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 
@@ -552,6 +829,41 @@ function LLMPage({ result }) {
 
 function Badge({ children, tone = "neutral" }) {
   return <span className={`badge tone-${tone}`}>{children}</span>;
+}
+
+function DecisionPill({ prediction }) {
+  const clean = String(prediction || "").toLowerCase();
+  const approved = clean.includes("approve");
+
+  const bg = approved
+    ? "radial-gradient(circle at 0% 0%, #10b981 0%, #0d9488 60%)"
+    : "radial-gradient(circle at 0% 0%, #ef4444 0%, #dc2626 60%)";
+
+  const shadow = approved
+    ? "0 0 12px rgba(16,185,129,0.6), 0 0 40px rgba(16,185,129,0.4)"
+    : "0 0 12px rgba(239,68,68,0.6), 0 0 40px rgba(239,68,68,0.4)";
+
+  return (
+    <div
+      style={{
+        minWidth: "140px",
+        borderRadius: "14px",
+        border: "1px solid rgba(255,255,255,0.18)",
+        background: bg,
+        color: "#fff",
+        fontWeight: 600,
+        fontSize: "0.9rem",
+        lineHeight: "1.3rem",
+        textAlign: "center",
+        padding: "12px 14px",
+        boxShadow: shadow,
+        textShadow:
+          "0 0 8px rgba(0,0,0,0.6), 0 0 20px rgba(255,255,255,0.4)",
+      }}
+    >
+      {approved ? "Likely Approved" : "At Risk of Rejection"}
+    </div>
+  );
 }
 
 function riskTone(risk) {
@@ -563,13 +875,13 @@ function riskTone(risk) {
 }
 
 function labelize(key) {
-  // turn snake_case into "Title Case"
+  // snake_case -> Title Case
   return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function formatValue(key, v) {
   if (v === null || v === undefined || v === "") return "—";
-  // currency-ish numbers
+  // money-ish values
   const moneyKeys = [
     "income_annum",
     "loan_amount",
@@ -581,7 +893,7 @@ function formatValue(key, v) {
   if (moneyKeys.includes(key) && !isNaN(Number(v))) {
     return `LKR ${Number(v).toLocaleString()}`;
   }
-  // generic number (except CIBIL which we keep raw range 300–900)
+  // pretty print numbers except cibil_score
   if (!isNaN(Number(v)) && key !== "cibil_score") {
     return Number(v).toLocaleString();
   }
