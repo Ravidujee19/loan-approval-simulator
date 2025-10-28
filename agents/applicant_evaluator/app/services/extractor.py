@@ -10,7 +10,7 @@ import requests
 import spacy
 
 from .nlp import extract_from_texts
-from .extractor_fallback import extract_applicant_details as legacy_extract_applicant_details
+# from .extractor_fallback import extract_applicant_details as legacy_extract_applicant_details
 
 # Load spaCy (used for fallback only)
 try:
@@ -111,7 +111,7 @@ def extract_applicant_details_primary(text: str, docs: List[Dict] = None) -> Tup
 
     # Fallback path
     try:
-        legacy = legacy_extract_applicant_details(text)
+        legacy = (text)
     except Exception as e:
         legacy = {}
         logger.exception(f"Legacy extractor failed: {e}")
