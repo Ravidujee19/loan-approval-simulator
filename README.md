@@ -94,7 +94,7 @@ npm run dev
 - [x] React frontend.
 - [x] Explainability (feature importance / SHAP).
 - [x] Fairness checks (Responsible AI).
-- [x] LLM-powered extraction & IR (for documents).
+- [x] LLM-powered recommendation.
 
 ---
 
@@ -115,4 +115,4 @@ loan-approval-simulator/
 ---
 
 ## 🧑‍💻 Authors
-- Team Preditora
+- Team Predictora
